@@ -8,6 +8,7 @@ import h5py
 import collections
 import string
 import copy
+import random
 
 from config import *
 
@@ -241,6 +242,10 @@ def data_augment(x, p, v, h5_path=None):
             data['value'][i * data_len: (i + 1) * data_len] = v
             data['value'][j * data_len: (j + 1) * data_len] = v
 
+        p = np.random.permutation(data_len * 8)
+        data['block'] = data['block'][p]
+        data['policy'] = data['policy'][p]
+        data['value'] = data['value'][p]
         data.close()
 
     else:

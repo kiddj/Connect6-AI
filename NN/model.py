@@ -49,6 +49,8 @@ def build_resnet(x):
     for _ in range(10):
         out = _res_block(out)
 
+    out = Dropout(0.4)(out)
+
     return out
 
 
@@ -132,11 +134,11 @@ def train_complex(model, dataset, model_name, init=0):
         TensorBoard(log_dir=log_dir, batch_size=batch_size),
         LambdaCallback(on_epoch_end=lambda epoch, logs: utils.show_board_all(policy, value, x_test, p_test, v_test, fig, axes)),
     ]
-    model.fit_generator(batch_generator(x_train, p_train, v_train), steps_per_epoch=x_train.shape[0] // batch_size,
-                        epochs=num_epoch, callbacks=callback_list, initial_epoch=init,
-                        validation_data=batch_generator(x_test, p_test, v_test), validation_steps=1)
-    # policy.fit(x_train, y_train, batch_size=batch_size, epochs=num_epoch, callbacks=callback_list,
-    #            validation_data=(x_test, y_test), initial_epoch=init)
+    # model.fit_generator(batch_generator(x_train, p_train, v_train), steps_per_epoch=x_train.shape[0] // batch_size,
+    #                     epochs=num_epoch, callbacks=callback_list, initial_epoch=init,
+    #                     validation_data=batch_generator(x_test, p_test, v_test), validation_steps=1)
+    policy.fit(x_train, [p_train, v_train], batch_size=batch_size, epochs=num_epoch, callbacks=callback_list,
+               validation_data=(x_test, [p_test, v_test]), initial_epoch=init, shuffle=True)
 
 
 def test_complex(model_name, dataset):
