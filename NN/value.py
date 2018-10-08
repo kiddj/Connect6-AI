@@ -36,7 +36,7 @@ def build_value_head(outer_tensor=None):
     out = Dense(1, activation='tanh')(out)
 
     m = Model(x, out, name='value')
-    m.summary()
+    # m.summary()
 
     return m
 

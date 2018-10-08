@@ -236,10 +236,10 @@ def data_augment(x, p, v, h5_path=None):
             j = i + 1
             data['block'][i * data_len: (i + 1) * data_len] = np.rot90(x, idx, (1, 2))
             data['block'][j * data_len: (j + 1) * data_len] = np.rot90(x, idx, (1, 2))
-            data['policy'][i * data_len: (i + 1) * data_len] = np.rot90(x, idx, (1, 2))
-            data['policy'][j * data_len: (j + 1) * data_len] = np.rot90(x, idx, (1, 2))
-            data['value'][i * data_len: (i + 1) * data_len] = np.rot90(x, idx, (1, 2))
-            data['value'][j * data_len: (j + 1) * data_len] = np.rot90(x, idx, (1, 2))
+            data['policy'][i * data_len: (i + 1) * data_len] = np.rot90(p, idx, (1, 2))
+            data['policy'][j * data_len: (j + 1) * data_len] = np.rot90(p, idx, (1, 2))
+            data['value'][i * data_len: (i + 1) * data_len] = v
+            data['value'][j * data_len: (j + 1) * data_len] = v
 
         data.close()
 

@@ -42,7 +42,7 @@ def build_policy():
     # out = Reshape((361,))(out)
 
     model = Model(x, out, name='policy')
-    model.summary()
+    # model.summary()
 
     return model
 

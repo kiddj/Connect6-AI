@@ -117,9 +117,9 @@ def train_complex(model, dataset, model_name, init=0):
     def batch_generator(x_data, p_data, v_data):
         while True:
             permu = np.random.permutation(x_data.shape[0])
-            x_data = x_data[permu]
-            p_data = p_data[permu]
-            v_data = v_data[permu]
+            x_data = np.array(x_data)[permu]
+            p_data = np.array(p_data)[permu]
+            v_data = np.array(v_data)[permu]
             for i in range(x_data.shape[0] // batch_size):
                 x_batch = x_data[i*batch_size: (i+1)*batch_size]
                 p_batch = p_data[i*batch_size: (i+1)*batch_size]

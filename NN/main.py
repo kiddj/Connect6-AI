@@ -1,6 +1,8 @@
 from keras.models import load_model
 from keras.utils import HDF5Matrix
 
+import h5py
+
 import os
 
 from config import *
@@ -15,12 +17,12 @@ def main():
     use_h5 = True
     do_train = True
     do_load_model = init > 0
-    force_create_data = True
+    force_create_data = False
 
     os.makedirs(DATA_PATH, exist_ok=True)
     data_dir = os.path.join(DATA_PATH, 'alphago_data')
 
-    if not os.path.isdir(data_dir) or force_create_data:
+    if not os.path.isdir(data_dir) or not os.path.isfile(H5_PATH) or force_create_data:
         x, p, v = utils.create_dataset_alphago(GAME_PATHS)
         if use_h5:
             utils.data_augment(x, p, v, h5_path=H5_PATH)
@@ -35,6 +37,10 @@ def main():
 
     if use_h5:
         dataset = H5_PATH
+
+        with h5py.File(H5_PATH, 'r') as f:
+            print('\t*** Dataset ***')
+            print(f['block'].shape, f['policy'].shape, f['value'].shape)
     else:
         x = np.load(os.path.join(data_dir, 'board.npy'))
         p = np.load(os.path.join(data_dir, 'policy.npy'))
