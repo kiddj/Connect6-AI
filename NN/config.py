@@ -13,6 +13,7 @@ GAME_PATHS = [
 MODEL_PATH = os.path.join(ROOT_PATH, 'models')
 DATA_PATH = os.path.join(ROOT_PATH, 'data')
 TEST_RESULT_PATH = os.path.join(ROOT_PATH, 'results')
+H5_PATH = os.path.join(DATA_PATH, 'data.h5')
 
 os.makedirs(MODEL_PATH, exist_ok=True)
 

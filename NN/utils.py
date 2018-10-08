@@ -3,6 +3,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 
 import matplotlib.pyplot as plt
+import h5py
 
 import collections
 import string
@@ -131,7 +132,7 @@ def read_game_alphago(game_path, filename):
 
             turn += 1
 
-    win = 1 if is_black(turn) else 0
+    win = -1 if is_black(turn) else 1
 
     return np.array(black_record), np.array(white_record), pos, win
 
@@ -187,6 +188,7 @@ def create_dataset_alphago(game_paths):
             for i in range(len(pos)):
                 block = []
                 b_turn = is_black(i + 1) > 0
+                win_turn = is_black(i)
 
                 block.append(np.ones((1,) + board_shape[:2]) if b_turn else np.zeros((1,) + board_shape[:2]))
                 block.append(copy.deepcopy(black[b: b + 2]))
@@ -201,13 +203,16 @@ def create_dataset_alphago(game_paths):
 
                 x.append(np.concatenate(block).transpose(1, 2, 0))
                 p.append(np.array(label))
-                p_win = b_turn ^ (win == 0)
-                v.append(1 if p_win else -1)
+                if i == 0:
+                    v.append(0)
+                else:
+                    p_win = win_turn * win
+                    v.append(p_win)
 
     return np.array(x), np.array(p), np.array(v)
 
 
-def data_augment(x, p, v):
+def data_augment(x, p, v, h5_path=None):
 
     x_aug = []
     p_aug = []
@@ -216,17 +221,40 @@ def data_augment(x, p, v):
     x_T = np.flip(x, 2)
     p_T = np.flip(p, 2)
 
-    for i in tqdm(range(4)):
-        x_aug.append(np.rot90(x, i, (1, 2)))
-        x_aug.append(np.rot90(x_T, i, (1, 2)))
-        p_aug.append(np.rot90(p, i, (1, 2)))
-        p_aug.append(np.rot90(p_T, i, (1, 2)))
-        v_aug.append(v)
-        v_aug.append(v)
+    if h5_path is not None:
 
-    x_aug = np.array(x_aug).reshape(-1, 19, 19, 5)
-    p_aug = np.array(p_aug).reshape(-1, 19, 19, 1)
-    v_aug = np.array(v_aug).reshape(-1, 1)
+        data_len = x.shape[0]
+
+        data = h5py.File(h5_path, 'w')
+        data.create_dataset('block', (data_len * 8,) + x.shape[1:], dtype='float32')
+        data.create_dataset('policy', (data_len * 8,) + p.shape[1:], dtype='float32')
+        data.create_dataset('value', (data_len * 8,) + v.shape[1:], dtype='float32')
+        data.attrs['len'] = data_len
+
+        for idx in tqdm(range(4)):
+            i = 2 * idx
+            j = i + 1
+            data['block'][i * data_len: (i + 1) * data_len] = np.rot90(x, idx, (1, 2))
+            data['block'][j * data_len: (j + 1) * data_len] = np.rot90(x, idx, (1, 2))
+            data['policy'][i * data_len: (i + 1) * data_len] = np.rot90(x, idx, (1, 2))
+            data['policy'][j * data_len: (j + 1) * data_len] = np.rot90(x, idx, (1, 2))
+            data['value'][i * data_len: (i + 1) * data_len] = np.rot90(x, idx, (1, 2))
+            data['value'][j * data_len: (j + 1) * data_len] = np.rot90(x, idx, (1, 2))
+
+        data.close()
+
+    else:
+        for i in tqdm(range(4)):
+            x_aug.append(np.rot90(x, i, (1, 2)))
+            x_aug.append(np.rot90(x_T, i, (1, 2)))
+            p_aug.append(np.rot90(p, i, (1, 2)))
+            p_aug.append(np.rot90(p_T, i, (1, 2)))
+            v_aug.append(v)
+            v_aug.append(v)
+
+        x_aug = np.array(x_aug).reshape(-1, 19, 19, 5)
+        p_aug = np.array(p_aug).reshape(-1, 19, 19, 1)
+        v_aug = np.array(v_aug).reshape(-1, 1)
 
     return x_aug, p_aug, v_aug
 
@@ -557,12 +585,12 @@ def main():
         # print_board(x[i, ..., 0])
         # print_board(x[i, ..., 2])
         # print_board(x[i, ..., 4])
-        print_board(p[i])
+        # print_board(p[i])
         print(v[i])
         print()
 
-    for i in range(3):
-        show_board_alphago(None, x[i:i + 1], p[i:i + 1], block=True)
+    for i in range(4):
+        show_board_all(None, None, x[i:i + 1], p[i:i + 1], v[i:i + 1], block=True)
 
     exit()
 

@@ -5,6 +5,7 @@ from keras.metrics import top_k_categorical_accuracy
 from keras import Model
 from keras.models import load_model
 from keras.losses import binary_crossentropy, categorical_crossentropy
+from keras.utils import HDF5Matrix
 import keras.backend as K
 
 import numpy as np
@@ -76,22 +77,33 @@ def train_complex(model, dataset, model_name, init=0):
     assert isinstance(policy, Model)
     assert isinstance(value, Model)
 
-    x, p, v = dataset
-    # permu = np.random.permutation(len(x))
-    # x = x[permu]
-    # p = p[permu]
-    # v = v[permu]
+    if isinstance(dataset, tuple):
+        x, p, v = dataset
+        # permu = np.random.permutation(len(x))
+        # x = x[permu]
+        # p = p[permu]
+        # v = v[permu]
 
-    p = np.reshape(p, (-1, 361))
+        p = np.reshape(p, (-1, 361))
 
-    pos = int(split_ratio * len(x))
-    x_train, x_test = x[:-pos], x[-pos:]
-    p_train, p_test = p[:-pos], p[-pos:]
-    v_train, v_test = v[:-pos], v[-pos:]
+        pos = int(split_ratio * len(x))
+        x_train, x_test = x[:-pos], x[-pos:]
+        p_train, p_test = p[:-pos], p[-pos:]
+        v_train, v_test = v[:-pos], v[-pos:]
 
-    print('Train Data: {} - {} - {}'.format(x_train.shape, p_train.shape, v_train.shape))
-    print('Test Data: {} - {} - {}'.format(x_test.shape, p_test.shape, v_test.shape))
-    # exit()
+        print('Train Data: {} - {} - {}'.format(x_train.shape, p_train.shape, v_train.shape))
+        print('Test Data: {} - {} - {}'.format(x_test.shape, p_test.shape, v_test.shape))
+        # exit()
+    else:
+        with h5py.File(H5_PATH, 'r') as f:
+            data_len = f.attrs['len']
+            pos = int(split_ratio * data_len)
+        x_train = HDF5Matrix(H5_PATH, 'block', end=data_len - pos)
+        x_test = HDF5Matrix(H5_PATH, 'block', start=data_len - pos)
+        p_train = HDF5Matrix(H5_PATH, 'policy', end=data_len - pos)
+        p_test = HDF5Matrix(H5_PATH, 'policy', start=data_len - pos)
+        v_train = HDF5Matrix(H5_PATH, 'value', end=data_len - pos)
+        v_test = HDF5Matrix(H5_PATH, 'value', start=data_len - pos)
 
     model_dir = os.path.join(MODEL_PATH, model_name)
     log_dir = os.path.join(model_dir, 'logs')
@@ -125,6 +137,44 @@ def train_complex(model, dataset, model_name, init=0):
                         validation_data=batch_generator(x_test, p_test, v_test), validation_steps=1)
     # policy.fit(x_train, y_train, batch_size=batch_size, epochs=num_epoch, callbacks=callback_list,
     #            validation_data=(x_test, y_test), initial_epoch=init)
+
+
+def test_complex(model_name, dataset):
+
+    os.makedirs(TEST_RESULT_PATH, exist_ok=True)
+
+    x, p, v = dataset
+    permu = np.random.permutation(len(x))
+    x = x[permu]
+    p = p[permu]
+    v = v[permu]
+
+    p = np.reshape(p, (-1, 361))
+
+    pos = int(split_ratio * len(x))
+    x_train, x_test = x[:-pos], x[-pos:]
+    p_train, p_test = p[:-pos], p[-pos:]
+    v_train, v_test = v[:-pos], v[-pos:]
+
+    print('Test Data: {} - {} - {}'.format(x_test.shape, p_test.shape, v_test.shape))
+
+    if model_name is None:
+        model = build_complex()
+    else:
+        model = load_model(os.path.join(MODEL_PATH, model_name, 'model.h5'))
+
+    policy = model.layers[1]
+    value = model.layers[2]
+
+    print('*** Successfully loaded model. ***')
+
+    fig = axes = None
+    i = 0
+    while True:
+        idx = np.random.choice(np.arange(x_test.shape[0]), 10)
+        fig, axes = utils.show_board_all(policy, value, x_test[idx], p_test[idx], v_test[idx], fig, axes,
+                                         save_path=os.path.join(TEST_RESULT_PATH, '{:04}.png'.format(i)))
+        i += 1
 
 
 def main():
