@@ -16,6 +16,19 @@ import utils
 import policy, value
 
 
+def save_model(model, model_dir, epoch=None, period=5):
+
+    assert isinstance(model, Model)
+    if epoch is None:
+        epoch = ''
+    else:
+        assert isinstance(epoch, int)
+        epoch = '_{}'.format(epoch)
+
+    if epoch % period == 0:
+        model.save(os.path.join(model_dir, 'model{}.h5'.epoch), include_optimizer=False)
+
+
 def build_resnet(x):
 
     channel = 32
@@ -132,12 +145,13 @@ def train_complex(model, dataset, model_name, init=0):
     callback_list = [
         ModelCheckpoint(os.path.join(model_dir, 'model.h5'), period=5),
         TensorBoard(log_dir=log_dir, batch_size=batch_size),
+        LambdaCallback(on_epoch_end=lambda epoch, logs: save_model(model, model_dir, epoch)),
         LambdaCallback(on_epoch_end=lambda epoch, logs: utils.show_board_all(policy, value, x_test, p_test, v_test, fig, axes)),
     ]
     # model.fit_generator(batch_generator(x_train, p_train, v_train), steps_per_epoch=x_train.shape[0] // batch_size,
     #                     epochs=num_epoch, callbacks=callback_list, initial_epoch=init,
     #                     validation_data=batch_generator(x_test, p_test, v_test), validation_steps=1)
-    policy.fit(x_train, [p_train, v_train], batch_size=batch_size, epochs=num_epoch, callbacks=callback_list,
+    model.fit(x_train, [p_train, v_train], batch_size=batch_size, epochs=num_epoch, callbacks=callback_list,
                validation_data=(x_test, [p_test, v_test]), initial_epoch=init, shuffle=True)
 
 

@@ -106,6 +106,7 @@ def train_policy(policy, dataset, model_name, init=0):
     callback_list = [
         ModelCheckpoint(os.path.join(model_dir, 'model.h5'), period=5),
         TensorBoard(log_dir=log_dir, batch_size=batch_size, histogram_freq=5),
+        LambdaCallback(on_epoch_end=lambda epoch, logs: model.save_model(policy, model_dir, epoch)),
         LambdaCallback(on_epoch_end=lambda epoch, logs: utils.show_board_alphago(policy, x_test, y_test, fig, axes)),
     ]
 
