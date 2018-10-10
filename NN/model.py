@@ -17,15 +17,15 @@ import policy, value
 
 
 def save_model(model, model_dir, epoch=None, period=5):
-
     assert isinstance(model, Model)
     if epoch is None:
-        epoch = ''
-    else:
-        assert isinstance(epoch, int)
-        epoch = '_{}'.format(epoch)
+        epoch = 0
 
     if epoch % period == 0:
+
+        assert isinstance(epoch, int)
+
+        epoch = '' if epoch == 0 else '_{}'.format(epoch)
         model.save(os.path.join(model_dir, 'model{}.h5'.epoch), include_optimizer=False)
 
 
