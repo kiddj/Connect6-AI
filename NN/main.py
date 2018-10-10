@@ -15,7 +15,7 @@ def main():
     init = 0
 
     use_h5 = False
-    do_train = False
+    do_train = True
     do_augment = False
     do_load_model = init > 0
     force_create_data = False
@@ -23,7 +23,7 @@ def main():
     os.makedirs(DATA_PATH, exist_ok=True)
     data_dir = os.path.join(DATA_PATH, 'alphago_data')
 
-    if not os.path.isdir(data_dir) or not os.path.isfile(H5_PATH) or force_create_data:
+    if not (os.path.isdir(data_dir) or os.path.isfile(H5_PATH)) or force_create_data:
         x, p, v = utils.create_dataset_alphago(GAME_PATHS)
         if do_augment:
             if use_h5:
@@ -53,21 +53,21 @@ def main():
 
         dataset = (x, p, v)
 
-    model_name = 'complex_1'
+    model_name = 'policy_1'
 
     if do_load_model:
         m = load_model(os.path.join(MODEL_PATH, model_name, 'model.h5'))
         print('*** Successfully loaded model. ***')
     else:
-        m = model.build_complex()
-        # m = model.build_policy()
+        # m = model.build_complex()
+        m = policy.build_policy()
 
     if do_train:
-        model.train_complex(m, dataset, model_name, init=init)
-        # policy.train_policy(m, dataset, model_name, init=init)
+        # model.train_complex(m, dataset, model_name, init=init)
+        policy.train_policy(m, dataset, model_name, init=init)
     else:
-        model.test_complex(None, dataset)
-        # model.test_complex(model_name, dataset)
+        # model.test_complex(None, dataset)
+        policy.test_policy(model_name, dataset)
 
 
 if __name__ == '__main__':

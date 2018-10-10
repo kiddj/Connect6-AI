@@ -23,7 +23,7 @@ def build_policy():
     channels = [16, 32, 64, 64]
     kern = (3, 3)
 
-    x = Input(shape=board_shape)
+    x = Input(shape=block_shape)
     out = x
 
     for channel in channels:
