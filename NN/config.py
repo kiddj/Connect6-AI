@@ -8,7 +8,7 @@ GAME_PATH = os.path.join(ROOT_PATH, 'games')
 GAME_PATHS = [
     # os.path.join(ROOT_PATH, 'games'),
     # os.path.join(ROOT_PATH, 'games_10-10'),
-    os.path.join(ROOT_PATH, 'games_1000'),
+    os.path.join(ROOT_PATH, 'games_3000'),
 ]
 MODEL_PATH = os.path.join(ROOT_PATH, 'models')
 DATA_PATH = os.path.join(ROOT_PATH, 'data')
