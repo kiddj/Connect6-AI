@@ -14,8 +14,9 @@ import model
 def main():
     init = 0
 
-    use_h5 = True
-    do_train = True
+    use_h5 = False
+    do_train = False
+    do_augment = False
     do_load_model = init > 0
     force_create_data = False
 
@@ -24,10 +25,11 @@ def main():
 
     if not os.path.isdir(data_dir) or not os.path.isfile(H5_PATH) or force_create_data:
         x, p, v = utils.create_dataset_alphago(GAME_PATHS)
-        if use_h5:
-            utils.data_augment(x, p, v, h5_path=H5_PATH)
-        else:
-            x, p, v = utils.data_augment(x, p, v)
+        if do_augment:
+            if use_h5:
+                utils.data_augment(x, p, v, h5_path=H5_PATH)
+            else:
+                x, p, v = utils.data_augment(x, p, v)
 
         os.makedirs(data_dir, exist_ok=True)
         np.save(os.path.join(data_dir, 'board.npy'), x)
@@ -58,10 +60,11 @@ def main():
         print('*** Successfully loaded model. ***')
     else:
         m = model.build_complex()
+        # m = model.build_policy()
 
     if do_train:
         model.train_complex(m, dataset, model_name, init=init)
-        # policy.train_policy(p_model, dataset, model_name, init=init)
+        # policy.train_policy(m, dataset, model_name, init=init)
     else:
         model.test_complex(None, dataset)
         # model.test_complex(model_name, dataset)
