@@ -26,7 +26,7 @@ def save_model(model, model_dir, epoch=None, period=5):
         assert isinstance(epoch, int)
 
         epoch = '' if epoch == 0 else '_{}'.format(epoch)
-        model.save(os.path.join(model_dir, 'model{}.h5'.epoch), include_optimizer=False)
+        model.save(os.path.join(model_dir, 'model{}.h5'.format(epoch)), include_optimizer=False)
 
 
 def build_resnet(x):
