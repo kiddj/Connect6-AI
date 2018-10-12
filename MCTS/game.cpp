@@ -80,20 +80,11 @@ Status MCTS::one_turn(const int x1, const int y1,
 		cout << piece_to_str[(int)playing] << " " << (turns++) << endl;
 		display_board_status(*cur_node);
 
-		/*vector<float> flattened_block;
+		/* vector<float> flattened_block;
 		generate_block(cur_node, this, &flattened_block);
-		float(*internal_array)[BOARD_WIDTH][CHANNEL_NUM] =
-			(float(*)[BOARD_WIDTH][CHANNEL_NUM])(flattened_block.data());
-		cout << endl;
-		for (int channel = 0; channel < CHANNEL_NUM; channel++) {
-			cout << "channel " << channel << endl;
-			for (int y = 0; y < BOARD_WIDTH; y++) {
-				for (int x = 0; x < BOARD_WIDTH; x++) {
-					cout << (int)internal_array[x][y][channel];
-				}
-				cout << endl;
-			}
-		}*/
+		for(int i = 0; i < flattened_block.size(); i++)
+			cout << flattened_block.at(i);
+		cout << endl; */
 	}
 
 	new_x1 = x[0], new_y1 = y[0], new_x2 = x[1], new_y2 = y[1];
@@ -258,24 +249,4 @@ float value_network(vector<float> flattened_block, void* node) {
 	Piece about_to_play_who = about_to_play((Node*)node);
 
 	return about_to_play_who == BLACK ? value : - value;
-}
-
-inline Piece about_to_play(const Node* node) {
-	Piece res = BASE_CASE;
-	if (node->last_piece == BLACK) {
-		res = node->nth_turn == NUM_TURN ? WHITE : BLACK;
-	}
-	else if (node->last_piece == WHITE) {
-		res = node->nth_turn == NUM_TURN ? BLACK : WHITE;
-	}
-	else if (node->last_piece == NONE) {
-		res = FIRST_PIECE;
-	}
-
-	if (res == BASE_CASE) {
-		cerr << endl;
-		cerr << "UNEXPECTED RETURN FROM ABOUT_TO_PLAY()" << endl;
-		cerr << endl;
-	}
-	return res;
 }

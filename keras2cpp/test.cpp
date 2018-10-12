@@ -48,6 +48,6 @@ int main(){
     for(int i = 0; i < 5; i++)
         std::cout << sorted_index.at(i) << " ";
     std::cout << std::endl;
-    std::cout << "Elapsed time: " << ((double)e-s) / CLOCKS_PER_SEC << std::endl;
+    std::cout << "Elapsed time: " << ((double) e - s) / CLOCKS_PER_SEC << std::endl;
     return 0;
 }

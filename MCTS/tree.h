@@ -181,7 +181,25 @@ vector<float> policy_network(vector<float> flattened_block); // using policy NN,
 float value_network(vector<float> flattened_block, void* node); // using value NN, record node.value float
 // in terms of player who is ABOUT to play
 
-inline Piece about_to_play(const Node* node); // who is ABOUT to play
+inline Piece about_to_play(const Node* node) { // who is ABOUT to play
+	Piece res = BASE_CASE;
+	if (node->last_piece == BLACK) {
+		res = node->nth_turn == NUM_TURN ? WHITE : BLACK;
+	}
+	else if (node->last_piece == WHITE) {
+		res = node->nth_turn == NUM_TURN ? BLACK : WHITE;
+	}
+	else if (node->last_piece == NONE) {
+		res = FIRST_PIECE;
+	}
+
+	if (res == BASE_CASE) {
+		cerr << endl;
+		cerr << "UNEXPECTED RETURN FROM ABOUT_TO_PLAY()" << endl;
+		cerr << endl;
+	}
+	return res;
+}
 
 void play_ai(const int in_ch, const int out_ch); // no parameter. used when simulating network based playing with multithreading.
 // whether player is white or black is determined by the first network message it receives.

@@ -178,7 +178,7 @@ pair<float, int> random_play(Node start, bool verbous) {
 		}
 	}
 
-	float v = NAN;
+	float v = NONE;
 	if (result == DRAW)
 		v = 0.f;
 	else if (result == BLACK_WON)
