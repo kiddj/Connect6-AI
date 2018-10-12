@@ -29,6 +29,8 @@ def build_value_head(outer_tensor=None):
     out = BatchNormalization()(out)
     out = LeakyReLU()(out)
 
+    out = Dropout(0.4)(out)
+
     out = Flatten()(out)
     out = Dense(256)(out)
     out = LeakyReLU()(out)

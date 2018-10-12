@@ -76,7 +76,7 @@ def to_one_hot(pred_board, reverse=False):
 """ Create Dataset """
 
 
-def read_game(filename):
+def read_game(filename, is_draw=False):
     board = [[0 for _ in range(19)] for _ in range(19)]
     game = []
     pos = []
@@ -95,16 +95,16 @@ def read_game(filename):
             game.append(copy.deepcopy(board))
             pos.append((r - 1, char_idx[c]))
 
-        win = is_black(len(game))
+        win = 0 if is_draw else is_black(len(game))
 
     return np.array(game), pos, win
 
 
-def read_game_alphago(game_path, filename):
+def read_game_alphago(game_path, filename, is_draw=False):
     black = [[0 for _ in range(19)] for _ in range(19)]
     white = [[0 for _ in range(19)] for _ in range(19)]
-    black_record = [black] * 2
-    white_record = [white] * 2
+    black_record = [black] * num_prev_board
+    white_record = [white] * num_prev_board
     pos = []
     turn = 0
 
@@ -134,6 +134,7 @@ def read_game_alphago(game_path, filename):
             turn += 1
 
     win = -1 if is_black(turn) else 1
+    win = 0 if is_draw else win
 
     return np.array(black_record), np.array(white_record), pos, win
 
@@ -147,7 +148,7 @@ def create_dataset(mode):
     y = []
     empty = np.array([get_empty_board()])
 
-    for file in tqdm(os.listdir(GAME_PATH)):
+    for file in tqdm(os.listdir(GAME_PATH + DRAW_GAME_PATHS)):
         record, pos, win = read_game(file)
         record = np.concatenate((empty, record))
         pos.insert(0, None)
@@ -180,8 +181,10 @@ def create_dataset_alphago(game_paths):
     v = []
 
     for path in game_paths:
+        draw = path in DRAW_GAME_PATHS
+
         for file in tqdm(os.listdir(path)):
-            black, white, pos, win = read_game_alphago(path, file)
+            black, white, pos, win = read_game_alphago(path, file, is_draw=draw)
 
             b = 0
             w = 0
@@ -192,14 +195,14 @@ def create_dataset_alphago(game_paths):
                 win_turn = is_black(i)
 
                 block.append(np.ones((1,) + board_shape[:2]) if b_turn else np.zeros((1,) + board_shape[:2]))
-                block.append(copy.deepcopy(black[b: b + 2]))
-                block.append(copy.deepcopy(white[w: w + 2]))
+                block.append(copy.deepcopy(black[b: b + num_prev_board]))
+                block.append(copy.deepcopy(white[w: w + num_prev_board]))
 
                 if b_turn:
-                    label = copy.deepcopy(black[b + 2] - black[b + 1])
+                    label = copy.deepcopy(black[b + num_prev_board] - black[b + num_prev_board - 1])
                     b += 1
                 else:
-                    label = copy.deepcopy(white[w + 2] - white[w + 1])
+                    label = copy.deepcopy(white[w + num_prev_board] - white[w + num_prev_board - 1])
                     w += 1
 
                 x.append(np.concatenate(block).transpose(1, 2, 0))
@@ -257,8 +260,8 @@ def data_augment(x, p, v, h5_path=None):
             v_aug.append(v)
             v_aug.append(v)
 
-        x_aug = np.array(x_aug).reshape(-1, 19, 19, 5)
-        p_aug = np.array(p_aug).reshape(-1, 19, 19, 1)
+        x_aug = np.array(x_aug).reshape(-1, *block_shape)
+        p_aug = np.array(p_aug).reshape(-1, *board_shape)
         v_aug = np.array(v_aug).reshape(-1, 1)
 
     return x_aug, p_aug, v_aug
@@ -308,7 +311,7 @@ def draw_board(ax, board, color):
 def show_board_rate(model, x_data, y_data, fig=None, axes=None, block=False, save_path=None):
 
     idx = np.random.randint(x_data.shape[0])
-    x_data = x_data[idx].reshape(-1, 19, 19, 5)
+    x_data = x_data[idx].reshape(-1, *block_shape)
     y_data = y_data[idx]
     y_pred = model.predict(x_data) if model is not None else np.random.uniform(-1, 1)
 
@@ -329,8 +332,8 @@ def show_board_rate(model, x_data, y_data, fig=None, axes=None, block=False, sav
     axes.set_ylim(-1, 19)
     axes.set_title('Current: {} & Win: {}\nWin Rate Pred.: {}'.format('Black' if b_turn else 'White', 'Black' if y_data > 0 else 'White', y_pred[0]))
 
-    cur_black = x_data[..., 2]
-    cur_white = x_data[..., 4]
+    cur_black = x_data[..., num_prev_board]
+    cur_white = x_data[..., 2 * num_prev_board]
 
     piece_list = []
     piece_list.extend(draw_board(axes, cur_black, color='black'))
@@ -368,8 +371,8 @@ def show_board_alphago(model, x_data, y_data, fig=None, axes=None, block=False, 
     #     return piece_list
 
     idx = np.random.randint(x_data.shape[0])
-    x_data = x_data[idx].reshape(-1, 19, 19, 5)
-    y_data = y_data[idx].reshape(-1, 19, 19, 1)
+    x_data = x_data[idx].reshape(-1, *block_shape)
+    y_data = y_data[idx].reshape(-1, *board_shape)
     y_pred = model.predict(x_data) if model is not None else np.random.uniform(0, 1, board_shape)
 
     b_turn = np.all(x_data[..., 0] == 1)
@@ -392,8 +395,8 @@ def show_board_alphago(model, x_data, y_data, fig=None, axes=None, block=False, 
         ax.set_ylim(-1, 19)
         ax.set_title(title)
 
-    cur_black = x_data[..., 2]
-    cur_white = x_data[..., 4]
+    cur_black = x_data[..., num_prev_board]
+    cur_white = x_data[..., 2 * num_prev_board]
 
     piece_list = []
     for ax in axes:
@@ -419,8 +422,8 @@ def show_board_alphago(model, x_data, y_data, fig=None, axes=None, block=False, 
 def show_board_all(policy, value, x_data, p_data, v_data, fig=None, axes=None, block=False, save_path=None):
 
     idx = np.random.randint(x_data.shape[0])
-    x_data = x_data[idx].reshape(-1, 19, 19, 5)
-    p_data = p_data[idx].reshape(-1, 19, 19, 1)
+    x_data = x_data[idx].reshape(-1, *block_shape)
+    p_data = p_data[idx].reshape(-1, *board_shape)
     p_pred = policy.predict(x_data) if policy is not None else np.random.uniform(0, 1, board_shape)
     v_data = v_data[idx].reshape(-1, 1)
     v_pred = value.predict(x_data) if value is not None else np.random.uniform(-1, 1)
@@ -447,8 +450,8 @@ def show_board_all(policy, value, x_data, p_data, v_data, fig=None, axes=None, b
         ax.set_ylim(-1, 19)
         ax.set_title(title)
 
-    cur_black = x_data[..., 2]
-    cur_white = x_data[..., 4]
+    cur_black = x_data[..., num_prev_board]
+    cur_white = x_data[..., 2 * num_prev_board]
 
     piece_list = []
     for ax in axes:
@@ -515,7 +518,7 @@ def show_board(model, x_data, y_data, fig=None, axes=None, block=False):
     b_turn = is_black_turn(board)
     sign = 1 if b_turn else -1
 
-    pred_board = model.predict(board).reshape(-1, 19, 19, 1) if model is not None else board
+    pred_board = model.predict(board).reshape(-1, *board_shape) if model is not None else board
     next_board = place_piece(sign * board, 0.9 * to_one_hot(y_data[idx: idx+1]))
 
     # pred_board = place_piece(board, 0.99 * model.predict(board).reshape(-1, 19, 19, 1)) if model is not None else next_board
