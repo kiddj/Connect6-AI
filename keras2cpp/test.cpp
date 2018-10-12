@@ -6,7 +6,6 @@
 
 template <typename T>
 std::vector<size_t> sort_index(const std::vector<T> &v) {
-
     // Initialize original index locations
     std::vector<size_t> idx(v.size());
     std::iota(idx.begin(), idx.end(), 0);
