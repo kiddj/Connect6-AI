@@ -24,7 +24,7 @@ def main():
     data_dir = os.path.join(DATA_PATH, 'alphago_data')
 
     if (not use_h5 and not os.path.isdir(data_dir)) or (use_h5 and not os.path.isfile(H5_PATH)) or force_create_data:
-        x, p, v = utils.create_dataset_alphago(GAME_PATHS)
+        x, p, v = utils.create_dataset_alphago(GAME_PATHS + DRAW_GAME_PATHS)
         if do_augment:
             if use_h5:
                 utils.data_augment(x, p, v, h5_path=H5_PATH)
