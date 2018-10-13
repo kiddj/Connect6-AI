@@ -211,7 +211,7 @@ def create_dataset_alphago(game_paths):
                     v.append(0)
                 else:
                     p_win = win_turn * win
-                    v.append(p_win)
+                    v.append(p_win * (0.99 ** (len(pos) - i - 1)))
 
     return np.array(x), np.array(p), np.array(v)
 

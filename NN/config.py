@@ -6,12 +6,11 @@ import os
 ROOT_PATH = os.getcwd()
 GAME_PATH = os.path.join(ROOT_PATH, 'games')
 GAME_PATHS = [
-    # os.path.join(ROOT_PATH, 'games'),
-    # os.path.join(ROOT_PATH, 'games_10-10'),
-    os.path.join(ROOT_PATH, 'games3_10-10'),
+    os.path.join(ROOT_PATH, 'mcts'),
+    os.path.join(ROOT_PATH, 'threats')
 ]
 DRAW_GAME_PATHS = [
-    # game path for draw game
+    os.path.join(ROOT_PATH, 'draw')
 ]
 MODEL_PATH = os.path.join(ROOT_PATH, 'models')
 DATA_PATH = os.path.join(ROOT_PATH, 'data')
@@ -25,7 +24,7 @@ board_shape = (19, 19, 1)
 block_shape = (19, 19, 2 * num_prev_board + 1)
 
 learning_rate = 1e-4
-batch_size = 64
+batch_size = 256
 num_epoch = 300
 
 split_ratio = 0.1
