@@ -192,499 +192,237 @@ pair<float, int> random_play(Node start, bool verbous) {
 #define CROP 360 // only consider top CROP number of options
 vector<Move> get_legal_moves(const Node& node, const bool use_NN) {
 
-	// TEST:
-	//vector<Move> moves_fake;
-	//for (int x = 0; x < BOARD_WIDTH; x++) {
-	//	for (int y = 0; y < BOARD_WIDTH; y++) {
-	//		if (node.board_state[x][y] == NONE) { // where empty! 
-	//			for (int dx = -3; dx <= 3; dx++)
-	//				for (int dy = -3; dy <= 3; dy++)
-	//					if (on_board(x + dx, y + dy) && node.board_state[x + dx][y + dy] != NONE) {
-	//						moves_fake.push_back({ x, y });
-	//						goto exit_for;
-	//					}
-	//						
-	//		exit_for:
-	//			const int a = 1;
-	//		}
-	//	}
-	//}
-	//return moves_fake;
-	// TEST:
-//	vector<Move> moves_fake;
-//	vector<pair<Move, int> > move_vs_score_fake;
-//	int cnt = 0;
-//	const int max_cnt = 360;
-//	for (int x = 0; x < BOARD_WIDTH; x++) {
-//		for (int y = 0; y < BOARD_WIDTH; y++) {
-//			if (node.board_state[x][y] == NONE) { // where empty! 
-//				move_vs_score_fake.push_back({ { x, y }, rand()});
-//				if (++cnt >= max_cnt)
-//					goto exit_for;
-//			}
-//		}
-//	}
-//exit_for:
-//	sort(move_vs_score_fake.begin(), move_vs_score_fake.end(),
-//		[](pair<Move, int> & a, pair<Move, int> & b) {return a.second > b.second; });
-//
-//
-//	const int len_fake = min(CROP, (int)move_vs_score_fake.size());
-//	for (int i = 0; i < len_fake; i++) {
-//		moves_fake.push_back(move_vs_score_fake[i].first);
-//	}
-//
-//	return moves_fake;
 	
 	vector<pair<Move, int> > move_vs_score;
+	vector<Move> imm_threat, imm_util;
 
-	if (use_NN == true) {
+	for (int x = 0; x < BOARD_WIDTH; x++) {
+		for (int y = 0; y < BOARD_WIDTH; y++) {
 
-		for (int x = 0; x < BOARD_WIDTH; x++) {
-			for (int y = 0; y < BOARD_WIDTH; y++) {
+			if (node.board_state[x][y] == NONE) { // where empty! 
 
-				if (node.board_state[x][y] == NONE) { // where empty! 
-
-					static const int dx[] = { 1, 1, 0, -1 }, dy[] = { 0, 1, 1, 1 };
-					int score = 0;
-					bool forbidden = false;
+				static const int dx[] = { 1, 1, 0, -1 }, dy[] = { 0, 1, 1, 1 };
+				int score = 0;
+				bool forbidden = false;
 					
-					for (int dir = 0; dir < 4; dir++) {
+				for (int dir = 0; dir < 4; dir++) {
 
-						const int dxx = dx[dir], dyy = dy[dir];
+					const int dxx = dx[dir], dyy = dy[dir];
 
-						// [0]: minus-, [1]: plus+ (follow idx)
-						Piece piece[2] = { NONE, NONE };
-						int indirect[2] = { 0, 0 };
-						int direct[2] = { 0, 0 };
+					// [0]: minus-, [1]: plus+ (follow idx)
+					Piece piece[2] = { NONE, NONE };
+					int indirect[2] = { 0, 0 };
+					int direct[2] = { 0, 0 };
 
-						// sign == -1 OR sign == 1
-						// idx == 0 OR idx == 1
-						for (int sign = -1, idx = 0; sign <= 1; sign += 2, idx++) {
+					// sign == -1 OR sign == 1
+					// idx == 0 OR idx == 1
+					for (int sign = -1, idx = 0; sign <= 1; sign += 2, idx++) {
 
-							bool discontinued = false;
+						bool discontinued = false;
 
-							for (int offset = 1; offset <= 5; offset++) {
-								const int cur_x = x + sign * dxx * offset;
-								const int cur_y = y + sign * dyy * offset;
+						for (int offset = 1; offset <= 6; offset++) {
+							const int cur_x = x + sign * dxx * offset;
+							const int cur_y = y + sign * dyy * offset;
 
-								if (on_board(cur_x, cur_y) == false)
-									break;
+							if (on_board(cur_x, cur_y) == false)
+								break;
 
-								const Piece cur_piece = node.board_state[cur_x][cur_y];
+							const Piece cur_piece = node.board_state[cur_x][cur_y];
 
-								if (cur_piece == NONE) {
-									discontinued = true;
+							if (cur_piece == NONE) {
+								discontinued = true;
+								indirect[idx]++;
+							}
+							else if (cur_piece == BLACK) {
+								if (piece[idx] == NONE) { // first
+									piece[idx] = BLACK;
 									indirect[idx]++;
+									if (discontinued == false)
+										direct[idx]++;
 								}
-								else if (cur_piece == BLACK) {
-									if (piece[idx] == NONE) { // first
-										piece[idx] = BLACK;
-										indirect[idx]++;
-										if (discontinued == false)
-											direct[idx]++;
-									}
-									else if (piece[idx] == BLACK) {
-										indirect[idx]++;
-										if (discontinued == false)
-											direct[idx]++;
-									}
-									else { // piece[idx] == WHITE
-										break;
-									}
+								else if (piece[idx] == BLACK) {
+									indirect[idx]++;
+									if (discontinued == false)
+										direct[idx]++;
 								}
-								else { // cur_piece == WHITE
-									if (piece[idx] == NONE) { // first
-										piece[idx] = WHITE;
-										indirect[idx]++;
-										if (discontinued == false)
-											direct[idx]++;
-									}
-									else if (piece[idx] == WHITE) {
-										indirect[idx]++;
-										if (discontinued == false)
-											direct[idx]++;
-									}
-									else { // piece[idx] == BLACK
-										break;
-									}
-								} // if end
-							} // offset
-						} // sign
+								else { // piece[idx] == WHITE
+									break;
+								}
+							}
+							else { // cur_piece == WHITE
+								if (piece[idx] == NONE) { // first
+									piece[idx] = WHITE;
+									indirect[idx]++;
+									if (discontinued == false)
+										direct[idx]++;
+								}
+								else if (piece[idx] == WHITE) {
+									indirect[idx]++;
+									if (discontinued == false)
+										direct[idx]++;
+								}
+								else { // piece[idx] == BLACK
+									break;
+								}
+							} // if end
+						} // offset
+					} // sign
 
-						Piece my_piece = NONE;
-						int my_nth_turn = -1;
-						if (node.last_piece == BLACK) {
-							if (node.nth_turn == NUM_TURN) {
-								my_piece = WHITE;
-								my_nth_turn = 1;
-							}
-							else {
-								my_piece = BLACK;
-								my_nth_turn = node.nth_turn + 1;
-							}
+					Piece my_piece = NONE;
+					int my_nth_turn = -1;
+					if (node.last_piece == BLACK) {
+						if (node.nth_turn == NUM_TURN) {
+							my_piece = WHITE;
+							my_nth_turn = 1;
 						}
-						else if (node.last_piece == WHITE) {
-							if (node.nth_turn == NUM_TURN) {
-								my_piece = BLACK;
-								my_nth_turn = 1;
-							}
-							else {
-								my_piece = WHITE;
-								my_nth_turn = node.nth_turn + 1;
-							}
-						}
-						else { // node.last_piece == NONE (start state)
+						else {
 							my_piece = BLACK;
-							my_nth_turn = NUM_TURN - FIRST_NUM_TURN + 1;
+							my_nth_turn = node.nth_turn + 1;
 						}
-
-						Piece opp_piece = my_piece == BLACK ? WHITE : BLACK;
-
-						int my_direct = 0, my_indirect = 0;
-						int opp_direct = 0, opp_indirect = 0;
-
-						//cout << direct[0] << ' ' << direct[1] << ' ';
-						//int check = 0;
-
-						if (piece[0] == piece[1]) {
-							int total_direct = 1 + direct[0] + direct[1];
-							int total_indirect = 1 + indirect[0] + indirect[1];
-
-							if (piece[0] == my_piece) {
-								my_direct = total_direct;
-								my_indirect = total_indirect;
-							}
-							else if (piece[0] == opp_piece) {
-								opp_direct = total_direct;
-								opp_indirect = total_indirect;
-							}
-							else { // piece[0] == NONE (empty vicinity)
-								   // empty
-								   //check = 1;
-							}
-						}
-						else if (piece[0] == NONE) {
-							int bigger_direct = 1 + direct[0] + direct[1];
-							int bigger_indirect = 1 + indirect[0] + indirect[1];
-
-							int smaller_direct = 1 + direct[0];
-							int smaller_indirect = 1 + indirect[0];
-
-							if (piece[1] == my_piece) {
-								my_direct = bigger_direct;
-								my_indirect = bigger_indirect;
-
-								opp_direct = smaller_direct;
-								opp_indirect = smaller_indirect;
-							}
-							else { // piece[1] == opp_piece
-								opp_direct = bigger_direct;
-								opp_indirect = bigger_indirect;
-
-								my_direct = smaller_direct;
-								my_indirect = smaller_indirect;
-							}
-						}
-						else if (piece[1] == NONE) {
-							int bigger_direct = 1 + direct[0] + direct[1];
-							int bigger_indirect = 1 + indirect[0] + indirect[1];
-
-							int smaller_direct = 1 + direct[1];
-							int smaller_indirect = 1 + indirect[1];
-
-							if (piece[0] == my_piece) {
-								my_direct = bigger_direct;
-								my_indirect = bigger_indirect;
-
-								opp_direct = smaller_direct;
-								opp_indirect = smaller_indirect;
-							}
-							else { // piece[0] == opp_piece
-								opp_direct = bigger_direct;
-								opp_indirect = bigger_indirect;
-
-								my_direct = smaller_direct;
-								my_indirect = smaller_indirect;
-							}
-						}
-						else if ((piece[0] == BLACK && piece[1] == WHITE) || (piece[0] == WHITE && piece[1] == BLACK)) {
-							if (piece[0] == my_piece) {
-								my_direct = 1 + direct[0];
-								my_indirect = 1 + indirect[0];
-
-								opp_direct = 1 + direct[1];
-								opp_indirect = 1 + indirect[1];
-							}
-							else { // piece[1] == my_piece
-
-								my_direct = 1 + direct[1];
-								my_indirect = 1 + indirect[1];
-
-								opp_direct = 1 + direct[0];
-								opp_indirect = 1 + indirect[0];
-							}
+					}
+					else if (node.last_piece == WHITE) {
+						if (node.nth_turn == NUM_TURN) {
+							my_piece = BLACK;
+							my_nth_turn = 1;
 						}
 						else {
-							cout << "unexpected branching!!!" << endl;
-							exit(0);
+							my_piece = WHITE;
+							my_nth_turn = node.nth_turn + 1;
 						}
+					}
+					else { // node.last_piece == NONE (start state)
+						my_piece = BLACK;
+						my_nth_turn = NUM_TURN - FIRST_NUM_TURN + 1;
+					}
+
+					Piece opp_piece = my_piece == BLACK ? WHITE : BLACK;
+
+					int my_direct = 0, my_indirect = 0;
+					int opp_direct = 0, opp_indirect = 0;
+
+					//cout << direct[0] << ' ' << direct[1] << ' ';
+					//int check = 0;
+
+					if (piece[0] == piece[1]) {
+						int total_direct = 1 + direct[0] + direct[1];
+						int total_indirect = 1 + indirect[0] + indirect[1];
+
+						if (piece[0] == my_piece) {
+							my_direct = total_direct;
+							my_indirect = total_indirect;
+						}
+						else if (piece[0] == opp_piece) {
+							opp_direct = total_direct;
+							opp_indirect = total_indirect;
+						}
+						else { // piece[0] == NONE (empty vicinity)
+								// empty
+								//check = 1;
+						}
+					}
+					else if (piece[0] == NONE) {
+						int bigger_direct = 1 + direct[0] + direct[1];
+						int bigger_indirect = 1 + indirect[0] + indirect[1];
+
+						int smaller_direct = 1 + direct[0];
+						int smaller_indirect = 1 + indirect[0];
+
+						if (piece[1] == my_piece) {
+							my_direct = bigger_direct;
+							my_indirect = bigger_indirect;
+
+							opp_direct = smaller_direct;
+							opp_indirect = smaller_indirect;
+						}
+						else { // piece[1] == opp_piece
+							opp_direct = bigger_direct;
+							opp_indirect = bigger_indirect;
+
+							my_direct = smaller_direct;
+							my_indirect = smaller_indirect;
+						}
+					}
+					else if (piece[1] == NONE) {
+						int bigger_direct = 1 + direct[0] + direct[1];
+						int bigger_indirect = 1 + indirect[0] + indirect[1];
+
+						int smaller_direct = 1 + direct[1];
+						int smaller_indirect = 1 + indirect[1];
+
+						if (piece[0] == my_piece) {
+							my_direct = bigger_direct;
+							my_indirect = bigger_indirect;
+
+							opp_direct = smaller_direct;
+							opp_indirect = smaller_indirect;
+						}
+						else { // piece[0] == opp_piece
+							opp_direct = bigger_direct;
+							opp_indirect = bigger_indirect;
+
+							my_direct = smaller_direct;
+							my_indirect = smaller_indirect;
+						}
+					}
+					else if ((piece[0] == BLACK && piece[1] == WHITE) || (piece[0] == WHITE && piece[1] == BLACK)) {
+						if (piece[0] == my_piece) {
+							my_direct = 1 + direct[0];
+							my_indirect = 1 + indirect[0];
+
+							opp_direct = 1 + direct[1];
+							opp_indirect = 1 + indirect[1];
+						}
+						else { // piece[1] == my_piece
+
+							my_direct = 1 + direct[1];
+							my_indirect = 1 + indirect[1];
+
+							opp_direct = 1 + direct[0];
+							opp_indirect = 1 + indirect[0];
+						}
+					}
+					else {
+						cout << "unexpected branching!!!" << endl;
+						exit(0);
+					}
 
 
-						if (my_direct > CONNECT_K) { // forbidden move
-							forbidden = true;
-							break;
-						}
-						else if (my_indirect >= CONNECT_K && my_direct >= CONNECT_K - 1) { // immediate util (conservative)
-							return vector<Move>(1, Move{ x, y });
-						}
-						else if (opp_indirect >= CONNECT_K && opp_direct >= CONNECT_K - NUM_TURN + 1) { // immediate threat
-							return vector<Move>(1, Move{ x, y });
-						}
-						else {
-							if (my_indirect >= CONNECT_K)
-								score += my_direct;
-							if (opp_indirect >= CONNECT_K)
-								score += opp_direct;
-						}
-
-						//cout << my_indirect << ' ' << opp_indirect << ' ';
-						//cout << my_direct << ' ' << opp_direct << ' ';
-						//cout << check << ' ';
-
-					} // dir
-					
-					if (forbidden == true) // forbidden move: consider next move (do not add to moves vector)
+					if (my_direct > CONNECT_K) { // forbidden move
+						forbidden = true;
 						break;
+					}
+					else if (my_indirect >= CONNECT_K && my_direct == CONNECT_K) { // immediate util (conservative)
+						imm_util.push_back(Move{ x, y });
+					}
+					else if (opp_indirect >= CONNECT_K && opp_direct >= CONNECT_K - NUM_TURN + 1) { // immediate threat
+						imm_threat.push_back(Move{ x, y });
+					}
+					else {
+						if (my_indirect >= CONNECT_K)
+							score += my_direct;
+						if (opp_indirect >= CONNECT_K)
+							score += opp_direct;
+					}
 
-					move_vs_score.push_back({ Move{ x, y }, score });
-				} // if end
-			} // y
-		} // x
+					//cout << my_indirect << ' ' << opp_indirect << ' ';
+					//cout << my_direct << ' ' << opp_direct << ' ';
+					//cout << check << ' ';
+
+				} // dir
+					
+				if (forbidden == true) // forbidden move: consider next move (do not add to moves vector)
+					break;
+
+				move_vs_score.push_back({ Move{ x, y }, score });
+			} // if end
+		} // y
+	} // x
+	
+	if (imm_util.size() > 0) {
+		return imm_util;
 	}
-	else {
-
-		for (int x = 0; x < BOARD_WIDTH; x++) {
-			for (int y = 0; y < BOARD_WIDTH; y++) {
-
-				if (node.board_state[x][y] == NONE) { // where empty! 
-
-					static const int dx[] = { 1, 1, 0, -1 }, dy[] = { 0, 1, 1, 1 };
-					int score = 0;
-					bool forbidden = false;
-					
-					for (int dir = 0; dir < 4; dir++) {
-
-						const int dxx = dx[dir], dyy = dy[dir];
-
-						// [0]: minus-, [1]: plus+ (follow idx)
-						Piece piece[2] = { NONE, NONE };
-						int indirect[2] = { 0, 0 };
-						int direct[2] = { 0, 0 };
-
-						// sign == -1 OR sign == 1
-						// idx == 0 OR idx == 1
-						for (int sign = -1, idx = 0; sign <= 1; sign += 2, idx++) {
-
-							bool discontinued = false;
-
-							for (int offset = 1; offset <= 5; offset++) {
-								const int cur_x = x + sign * dxx * offset;
-								const int cur_y = y + sign * dyy * offset;
-
-								if (on_board(cur_x, cur_y) == false)
-									break;
-
-								const Piece cur_piece = node.board_state[cur_x][cur_y];
-
-								if (cur_piece == NONE) {
-									discontinued = true;
-									indirect[idx]++;
-								}
-								else if (cur_piece == BLACK) {
-									if (piece[idx] == NONE) { // first
-										piece[idx] = BLACK;
-										indirect[idx]++;
-										if (discontinued == false)
-											direct[idx]++;
-									}
-									else if (piece[idx] == BLACK) {
-										indirect[idx]++;
-										if (discontinued == false)
-											direct[idx]++;
-									}
-									else { // piece[idx] == WHITE
-										break;
-									}
-								}
-								else { // cur_piece == WHITE
-									if (piece[idx] == NONE) { // first
-										piece[idx] = WHITE;
-										indirect[idx]++;
-										if (discontinued == false)
-											direct[idx]++;
-									}
-									else if (piece[idx] == WHITE) {
-										indirect[idx]++;
-										if (discontinued == false)
-											direct[idx]++;
-									}
-									else { // piece[idx] == BLACK
-										break;
-									}
-								} // if end
-							} // offset
-						} // sign
-
-						Piece my_piece = NONE;
-						int my_nth_turn = -1;
-						if (node.last_piece == BLACK) {
-							if (node.nth_turn == NUM_TURN) {
-								my_piece = WHITE;
-								my_nth_turn = 1;
-							}
-							else {
-								my_piece = BLACK;
-								my_nth_turn = node.nth_turn + 1;
-							}
-						}
-						else if (node.last_piece == WHITE) {
-							if (node.nth_turn == NUM_TURN) {
-								my_piece = BLACK;
-								my_nth_turn = 1;
-							}
-							else {
-								my_piece = WHITE;
-								my_nth_turn = node.nth_turn + 1;
-							}
-						}
-						else { // node.last_piece == NONE (start state)
-							my_piece = BLACK;
-							my_nth_turn = NUM_TURN - FIRST_NUM_TURN + 1;
-						}
-
-						Piece opp_piece = my_piece == BLACK ? WHITE : BLACK;
-
-						int my_direct = 0, my_indirect = 0;
-						int opp_direct = 0, opp_indirect = 0;
-
-						//cout << direct[0] << ' ' << direct[1] << ' ';
-						//int check = 0;
-
-						if (piece[0] == piece[1]) {
-							int total_direct = 1 + direct[0] + direct[1];
-							int total_indirect = 1 + indirect[0] + indirect[1];
-
-							if (piece[0] == my_piece) {
-								my_direct = total_direct;
-								my_indirect = total_indirect;
-							}
-							else if (piece[0] == opp_piece) {
-								opp_direct = total_direct;
-								opp_indirect = total_indirect;
-							}
-							else { // piece[0] == NONE (empty vicinity)
-								   // empty
-								   //check = 1;
-							}
-						}
-						else if (piece[0] == NONE) {
-							int bigger_direct = 1 + direct[0] + direct[1];
-							int bigger_indirect = 1 + indirect[0] + indirect[1];
-
-							int smaller_direct = 1 + direct[0];
-							int smaller_indirect = 1 + indirect[0];
-
-							if (piece[1] == my_piece) {
-								my_direct = bigger_direct;
-								my_indirect = bigger_indirect;
-
-								opp_direct = smaller_direct;
-								opp_indirect = smaller_indirect;
-							}
-							else { // piece[1] == opp_piece
-								opp_direct = bigger_direct;
-								opp_indirect = bigger_indirect;
-
-								my_direct = smaller_direct;
-								my_indirect = smaller_indirect;
-							}
-						}
-						else if (piece[1] == NONE) {
-							int bigger_direct = 1 + direct[0] + direct[1];
-							int bigger_indirect = 1 + indirect[0] + indirect[1];
-
-							int smaller_direct = 1 + direct[1];
-							int smaller_indirect = 1 + indirect[1];
-
-							if (piece[0] == my_piece) {
-								my_direct = bigger_direct;
-								my_indirect = bigger_indirect;
-
-								opp_direct = smaller_direct;
-								opp_indirect = smaller_indirect;
-							}
-							else { // piece[0] == opp_piece
-								opp_direct = bigger_direct;
-								opp_indirect = bigger_indirect;
-
-								my_direct = smaller_direct;
-								my_indirect = smaller_indirect;
-							}
-						}
-						else if ((piece[0] == BLACK && piece[1] == WHITE) || (piece[0] == WHITE && piece[1] == BLACK)) {
-							if (piece[0] == my_piece) {
-								my_direct = 1 + direct[0];
-								my_indirect = 1 + indirect[0];
-
-								opp_direct = 1 + direct[1];
-								opp_indirect = 1 + indirect[1];
-							}
-							else { // piece[1] == my_piece
-
-								my_direct = 1 + direct[1];
-								my_indirect = 1 + indirect[1];
-
-								opp_direct = 1 + direct[0];
-								opp_indirect = 1 + indirect[0];
-							}
-						}
-						else {
-							cout << "unexpected branching!!!" << endl;
-							exit(0);
-						}
-
-
-						if (my_direct > CONNECT_K) { // forbidden move
-							forbidden = true;
-							break;
-						}
-						else if (my_indirect >= CONNECT_K && my_direct >= CONNECT_K - 1) { // immediate util (conservative)
-							return vector<Move>(1, Move{ x, y });
-						}
-						else if (opp_indirect >= CONNECT_K && opp_direct >= CONNECT_K - NUM_TURN + 1) { // immediate threat
-							return vector<Move>(1, Move{ x, y });
-						}
-						else {
-							if (my_indirect >= CONNECT_K)
-								score += my_direct;
-							if (opp_indirect >= CONNECT_K)
-								score += opp_direct;
-						}
-
-						//cout << my_indirect << ' ' << opp_indirect << ' ';
-						//cout << my_direct << ' ' << opp_direct << ' ';
-						//cout << check << ' ';
-
-					} // dir
-					
-					if (forbidden == true) // forbidden move: consider next move (do not add to moves vector)
-						break;
-
-					move_vs_score.push_back({ Move{ x, y }, score });
-				} // if end
-			} // y
-		} // x
+	else if (imm_threat.size() > 0) {
+		return imm_threat;
 	}
 
 	sort(move_vs_score.begin(), move_vs_score.end(), 

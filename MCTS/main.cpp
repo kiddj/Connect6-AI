@@ -9,15 +9,16 @@ Channel channel[4];
 
 
 
+
 int main(int argc, char** argv) {
 	initialize();
-	bool black_ai = false, white_ai = false;
+	Player_type black_ai = NN, white_ai = NN;
 	if (argc < 3) {
 		cerr << "needs 2 arguement: black, white" << endl;
 	}
 	
-	black_ai = argv[1][0] == '1';
-	white_ai = argv[2][0] == '1';
+	black_ai = (Player_type)(argv[1][0] - '0');
+	white_ai = (Player_type)(argv[2][0] - '0');
 
 	thread black_player(play_ai, 0, 2, black_ai);
 	thread white_player(play_ai, 1, 3, white_ai);
@@ -38,24 +39,60 @@ int main(int argc, char** argv) {
 
 	return 0;
 }
-void play_ai(const int in_ch, const int out_ch, const bool use_NN) {
-	const fdeep::model model = fdeep::load_model("model_50.json"); // load a model only once
-	MCTS* mcts = new MCTS(use_NN, &model);
-	Status status = PLAYING;
-	while (status == PLAYING) {
-		int x1, y1, x2, y2;
-		bool start;
-		int new_x1, new_y1, new_x2, new_y2;
+void play_ai(const int in_ch, const int out_ch, const Player_type player_type) {
 
-		recv_input(x1, y1, x2, y2, start, in_ch);
-		status = mcts->one_turn(x1, y1, x2, y2, start, new_x1, new_y1, new_x2, new_y2);
-		send_output(new_x1, new_y1, new_x2, new_y2, false, out_ch);
+	if (player_type == HEURISTIC || player_type == NN) {
+		const fdeep::model model = fdeep::load_model("model_50.json"); // load a model only once
+		MCTS* mcts = new MCTS((player_type == NN), &model);
+		Status status = PLAYING;
+		while (status == PLAYING) {
+			int x1, y1, x2, y2;
+			bool start;
+			int new_x1, new_y1, new_x2, new_y2;
 
-		if (status != PLAYING)
-			exit(0);
+			recv_input(x1, y1, x2, y2, start, in_ch);
+			status = mcts->one_turn(x1, y1, x2, y2, start, new_x1, new_y1, new_x2, new_y2);
+			send_output(new_x1, new_y1, new_x2, new_y2, false, out_ch);
+		}
+		switch (status) {
+		case PLAYING:
+			cout << "playing" << endl;
+			break;
+		case BLACK_WON:
+			cout << "BLACK WON" << endl;
+			break;
+		case WHITE_WON:
+			cout << "WHITE WON" << endl;
+			break;
+		case DRAW:
+			cout << "DRAW" << endl;
+			break;
+		default:
+			cout << "unknown status after ai's turn: " << status << endl;
+		}
+		return;
 	}
-	return;
+	else if (player_type == PERSON){
+		Status status = PLAYING;
+		while (status == PLAYING) {
+			int x1, y1, x2, y2;
+			bool start;
+			int new_x1, new_y1, new_x2, new_y2;
 
+			recv_input(x1, y1, x2, y2, start, in_ch);
+			
+			cout << endl;
+			cout << "Input your position (type 4 integers with spacing x1 y1 x2 y2): ";
+			cin >> new_x1 >> new_y1 >> new_x2 >> new_y2;
+
+			send_output(new_x1, new_y1, new_x2, new_y2, false, out_ch);
+		}
+		return;
+	}
+	else {
+		cerr << "unknown player_type!" << endl;
+		exit(1);
+	}
 
 }
 

@@ -24,6 +24,8 @@ typedef enum { PLAYING = 0, BLACK_WON, WHITE_WON, DRAW } Status;
 
 #define FIRST_PIECE BLACK
 
+typedef enum { HEURISTIC = 0, NN, PERSON } Player_type;
+
 typedef struct Move {
 	int x, y;
 } Move;
@@ -206,7 +208,7 @@ inline Piece about_to_play(const Node* node) { // who is ABOUT to play
 	return res;
 }
 
-void play_ai(const int in_ch, const int out_ch, const bool use_NN); // no parameter. used when simulating network based playing with multithreading.
+void play_ai(const int in_ch, const int out_ch, const Player_type player_type); // no parameter. used when simulating network based playing with multithreading.
 // whether player is white or black is determined by the first network message it receives.
 
 typedef struct Channel {

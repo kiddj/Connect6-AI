@@ -67,13 +67,19 @@ Status MCTS::one_turn(const int x1, const int y1,
 					break;
 				}
 			}
+			cout << "after len loop " << (next_node == NULL) << " " << turns << endl;
 			if (next_node == NULL) {
+				if (idx_to_expand == -1) {
+					cur_node->moves.resize(1);
+					cur_node->moves[0] = cur_opp_move;
+					idx_to_expand = 0;
+				}
 				next_node = expand(cur_node, idx_to_expand, (opp_move_cnt == NUM_TURN - 1), this);
 			}
+			cout << "before set_new_root opp move " << turns << endl;
 			set_new_root(next_node);
 		}
 	}
-
 	int x[NUM_TURN], y[NUM_TURN];
 	for (int i = 0; i < NUM_TURN; i++) {
 		pair<Move, Node* > result = get_best_move_child(cur_node, PLAYTHROUGH_LIMIT, TIME_LIMIT_SEC);
@@ -152,7 +158,8 @@ pair<Move, Node* > MCTS::get_best_move_child(Node* cur_node, int num_playout, in
 		}
 	}
 
-	cout << "win_rate: " << (int)((cur_node->children[res]->win_cnt / cur_node->children[res]->visit_cnt + 1) / 2 * 100) << "%" << endl;
+	if (res == -1)
+		cout << "win_rate: " << (int)((cur_node->children[res]->win_cnt / cur_node->children[res]->visit_cnt + 1) / 2 * 100) << "%" << endl;
 	return { cur_node->moves[res], cur_node->children[res] };
 }
 
