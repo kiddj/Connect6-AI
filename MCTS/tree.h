@@ -1,4 +1,6 @@
 #pragma once
+#include "fdeep/fdeep.hpp"
+#include "fplus/fplus.hpp"
 
 #include <iostream>
 #include <vector>
@@ -73,13 +75,15 @@ class Board_record {
 
 class MCTS {
 public:
+	bool use_NN;
 	Node* cur_node;
 	Piece playing;
 	bool first;
 	int turns;
 	deque<Node* > black_log, white_log;
+	const fdeep::model* model;
 
-	MCTS();
+	MCTS(const bool& use_NN, const fdeep::model* _model);
 	void set_new_root(Node*& new_root);
 	Status one_turn(const int x1, const int y1,
 		const int x2, const int y2,
@@ -176,9 +180,10 @@ inline double get_score(const Node* node, const float prior_prob, const int pare
 void generate_block(Node* node, MCTS* mcts, vector<float>* flattened_block);
 // generated 1d-flattened vector representation of a 19x19x5 3d block
 
-vector<float> policy_network(vector<float> flattened_block); // using policy NN, record node.policy matrix
+vector<float> policy_network(vector<float> flattened_block, 
+	const fdeep::model* _model, const bool use_NN); // using policy NN, record node.policy matrix
 // in terms of player who is ABOUT to play
-float value_network(vector<float> flattened_block, void* node); // using value NN, record node.value float
+float value_network(vector<float> flattened_block, void* node, const bool use_NN); // using value NN, record node.value float
 // in terms of player who is ABOUT to play
 
 inline Piece about_to_play(const Node* node) { // who is ABOUT to play
@@ -201,7 +206,7 @@ inline Piece about_to_play(const Node* node) { // who is ABOUT to play
 	return res;
 }
 
-void play_ai(const int in_ch, const int out_ch); // no parameter. used when simulating network based playing with multithreading.
+void play_ai(const int in_ch, const int out_ch, const bool use_NN); // no parameter. used when simulating network based playing with multithreading.
 // whether player is white or black is determined by the first network message it receives.
 
 typedef struct Channel {

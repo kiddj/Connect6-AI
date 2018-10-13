@@ -117,8 +117,8 @@ Status place_piece(Node& node, const Move& move, const bool use_NN, MCTS* mcts) 
 	if (use_NN) {
 		vector<float> flattened_block;
 		generate_block(&node, mcts, &flattened_block);
-		vector<float> policy_1d = policy_network(flattened_block);
-		float value = value_network(flattened_block, &node);
+		vector<float> policy_1d = policy_network(flattened_block, mcts->model, mcts->use_NN);
+		float value = value_network(flattened_block, &node, mcts->use_NN);
 
 		float(*policy_2d)[BOARD_WIDTH] = 
 			(float(*)[BOARD_WIDTH])policy_1d.data();
@@ -810,9 +810,16 @@ void display_board_status(const Node& node) {
 	static const char* status_str[] = { "PLAYING", "BLACK_WON", "WHITE_WON", "DRAW" };
 	static const char piece_char[] = { '.', 'X', 'O', '?' };
 
+	cout << "    ";
+	for (int x = 0; x < BOARD_WIDTH; x++) {
+		cout << (x >= 10 ? x - 10 : x) << " ";
+	}
+	cout << endl;
 	for (int y = 0; y < BOARD_WIDTH; y++) {
+		cout << "  ";
+		cout << (y >= 10 ? y - 10 : y) << " ";
 		for (int x = 0; x < BOARD_WIDTH; x++) {
-			cout << piece_char[(int)(node.board_state[x][y])];
+			cout << piece_char[(int)(node.board_state[x][y])] << " ";
 		}
 		cout << endl;
 	}

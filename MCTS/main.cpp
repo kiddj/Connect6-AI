@@ -7,10 +7,20 @@ using namespace std;
 bool avail_flag[4] = { false, };
 Channel channel[4];
 
-int main() {
+
+
+int main(int argc, char** argv) {
 	initialize();
-	thread black_player(play_ai, 0, 2);
-	thread white_player(play_ai, 1, 3);
+	bool black_ai = false, white_ai = false;
+	if (argc < 3) {
+		cerr << "needs 2 arguement: black, white" << endl;
+	}
+	
+	black_ai = argv[1][0] == '1';
+	white_ai = argv[2][0] == '1';
+
+	thread black_player(play_ai, 0, 2, black_ai);
+	thread white_player(play_ai, 1, 3, white_ai);
 
 	int cur_player = 0; 
 	send_output(-1, -1, -1, -1, true, cur_player); // to black
@@ -28,10 +38,9 @@ int main() {
 
 	return 0;
 }
-
-void play_ai(const int in_ch, const int out_ch) {
-	
-	MCTS* mcts = new MCTS();
+void play_ai(const int in_ch, const int out_ch, const bool use_NN) {
+	const fdeep::model model = fdeep::load_model("model_50.json"); // load a model only once
+	MCTS* mcts = new MCTS(use_NN, &model);
 	Status status = PLAYING;
 	while (status == PLAYING) {
 		int x1, y1, x2, y2;
@@ -46,6 +55,8 @@ void play_ai(const int in_ch, const int out_ch) {
 			exit(0);
 	}
 	return;
+
+
 }
 
 void recv_input(int& x1, int& y1, int& x2, int& y2, bool& start, const int ch) {

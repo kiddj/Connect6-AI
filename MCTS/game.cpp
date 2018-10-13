@@ -1,17 +1,22 @@
+#include "fdeep/fdeep.hpp"
+#include "fplus/fplus.hpp"
+
 #include "tree.h"
 #include <iostream>
 #include <ctime>
 #include <cmath>
+#include <algorithm>
 using namespace std;
 
-MCTS::MCTS() :
+MCTS::MCTS(const bool& _use_NN, const fdeep::model* _model) :
+	use_NN(_use_NN),
 	cur_node(NULL),
 	playing(NONE),
 	first(true),
 	turns(0),
 	black_log(TURN_HISTORY_NUM, NULL),
-	white_log(TURN_HISTORY_NUM, NULL) {
-
+	white_log(TURN_HISTORY_NUM, NULL){
+	model = _model;
 	cur_node = alloc_Node();
 	for (int i = 0; i < FIRST_NUM_TURN; i++) {
 		pair<Move, Node* > result = get_best_move_child(cur_node, PLAYTHROUGH_LIMIT, TIME_LIMIT_SEC);
@@ -43,11 +48,11 @@ Status MCTS::one_turn(const int x1, const int y1,
 	static const char* piece_to_str[] = { "NONE", "BLACK", "WHITE" };
 
 	if (start) {
-		playing = BLACK;
+		playing = WHITE;
 	}
 	else {
 		if (first) {
-			playing = WHITE;
+			playing = BLACK;
 		}
 		const Move opp_moves[NUM_TURN] = { { x1, y1 },{ x2, y2 } };
 		for (int opp_move_cnt = 0; opp_move_cnt < NUM_TURN; opp_move_cnt++) {
@@ -77,7 +82,7 @@ Status MCTS::one_turn(const int x1, const int y1,
 		x[i] = result.first.x;
 		y[i] = result.first.y;
 
-		cout << piece_to_str[(int)playing] << " " << (turns++) << endl;
+		cout << piece_to_str[(int)playing] << " " << (turns++) << ": " << (use_NN ? "using NN" : "heuristic") << endl;
 		display_board_status(*cur_node);
 
 		/* vector<float> flattened_block;
@@ -227,22 +232,45 @@ inline double get_score(const Node* node, const float prior_prob, const int pare
 		(double)C * prior_prob *  sqrt(parent_visit) / (1 + child_visit);
 }
 
-vector<float> policy_network(vector<float> flattened_block) {
-	vector<float> policy_1d(BOARD_WIDTH * BOARD_WIDTH, 0.);
-	float(*policy_2d)[BOARD_WIDTH] = (float(*)[BOARD_WIDTH])policy_1d.data();
+vector<float> policy_network(vector<float> flattened_block, 
+		const fdeep::model* _model, const bool use_NN) {
 
-	float total = 0.;
-	for (int x = 0; x < BOARD_WIDTH; x++)
-		for (int y = 0; y < BOARD_WIDTH; y++)
-			total += (policy_2d[x][y] = (float)(rand() % 3));
+	if (use_NN == false) {
+		vector<float> policy_1d(BOARD_WIDTH * BOARD_WIDTH, 0.);
+		float(*policy_2d)[BOARD_WIDTH] = (float(*)[BOARD_WIDTH])policy_1d.data();
 
-	for (int x = 0; x < BOARD_WIDTH; x++)
-		for (int y = 0; y < BOARD_WIDTH; y++)
-			policy_2d[x][y] /= total;
+		float total = 0.;
+		for (int x = 0; x < BOARD_WIDTH; x++)
+			for (int y = 0; y < BOARD_WIDTH; y++)
+				total += (policy_2d[x][y] = (float)(1));
 
-	return policy_1d;
+		for (int x = 0; x < BOARD_WIDTH; x++)
+			for (int y = 0; y < BOARD_WIDTH; y++)
+				policy_2d[x][y] /= total;
+
+		return policy_1d;
+	}
+
+	const auto shared = fdeep::shared_float_vec(fplus::make_shared_ref<fdeep::float_vec>(flattened_block));
+    fdeep::tensor3 input = fdeep::tensor3(fdeep::shape_hwc(19, 19, 5), shared); // converted to tensor form
+
+	fdeep::tensor3s results = _model->predict({input});  // tensor3s(input) -> NN -> tensor3s(output)
+    fdeep::tensor3 result = results[0];  // tensor3s -> tensor3
+    vector<float> result_vec = *result.as_vector();  // tensor3 -> vector<float>
+
+    return result_vec;
 }
-float value_network(vector<float> flattened_block, void* node) {
+float value_network(vector<float> flattened_block, void* node, const bool use_NN) {
+
+	if (use_NN == false) {
+		const pair<float, int> result_pair = random_play(*(Node*)node, false);
+		const float value = result_pair.first;
+
+		Piece about_to_play_who = about_to_play((Node*)node);
+
+		return about_to_play_who == BLACK ? value : - value;
+	}
+
 	const pair<float, int> result_pair = random_play(*(Node*)node, false);
 	const float value = result_pair.first;
 
@@ -250,3 +278,4 @@ float value_network(vector<float> flattened_block, void* node) {
 
 	return about_to_play_who == BLACK ? value : - value;
 }
+	
