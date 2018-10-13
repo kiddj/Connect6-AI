@@ -18,7 +18,7 @@ def main():
     do_train = True
     do_augment = False
     do_load_model = init > 0
-    force_create_data = False
+    force_create_data = True
 
     os.makedirs(DATA_PATH, exist_ok=True)
     data_dir = os.path.join(DATA_PATH, 'alphago_data')
@@ -66,7 +66,7 @@ def main():
         model.train_complex(m, dataset, model_name, init=init)
         # policy.train_policy(m, dataset, model_name, init=init)
     else:
-        model.test_complex(m, dataset)
+        model.test_complex(model_name, dataset)
         # policy.test_policy(model_name, dataset)
 
 
