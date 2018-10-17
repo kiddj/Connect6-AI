@@ -5,6 +5,8 @@
 #include <iostream>
 #include <vector>
 #include <deque>
+
+
 using namespace std;
 
 #define BOARD_WIDTH 19
@@ -25,6 +27,9 @@ typedef enum { PLAYING = 0, BLACK_WON, WHITE_WON, DRAW } Status;
 #define FIRST_PIECE BLACK
 
 typedef enum { HEURISTIC = 0, NN, PERSON } Player_type;
+
+
+extern fdeep::model model;
 
 typedef struct Move {
 	int x, y;
@@ -83,10 +88,9 @@ public:
 	bool first;
 	int turns;
 	deque<Node* > black_log, white_log;
-	const fdeep::model* model;
 
-	MCTS(const bool& use_NN, const fdeep::model* _model);
-	void set_new_root(Node*& new_root);
+	MCTS(const bool use_NN);
+	void set_new_root(Node* new_root);
 	Status one_turn(const int x1, const int y1,
 		const int x2, const int y2,
 		const bool start,
@@ -182,8 +186,7 @@ inline double get_score(const Node* node, const float prior_prob, const int pare
 void generate_block(Node* node, MCTS* mcts, vector<float>* flattened_block);
 // generated 1d-flattened vector representation of a 19x19x5 3d block
 
-vector<float> policy_network(vector<float> flattened_block, 
-	const fdeep::model* _model, const bool use_NN); // using policy NN, record node.policy matrix
+vector<float> policy_network(vector<float> flattened_block, const bool use_NN); // using policy NN, record node.policy matrix
 // in terms of player who is ABOUT to play
 float value_network(vector<float> flattened_block, void* node, const bool use_NN); // using value NN, record node.value float
 // in terms of player who is ABOUT to play
@@ -219,3 +222,6 @@ void recv_input(int& x1, int& y1, int& x2, int& y2, bool& start, const int ch);
 // if after the call start==true, it is first turn for black(2 placement). x1,y1,x2,y2 is not affected
 // get other player's latest choice otherwise
 void send_output(const int x1,  const int y1, const int x2, const int y2, const bool start, const int ch);
+
+void log_str(char * msg);
+

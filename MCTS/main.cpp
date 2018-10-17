@@ -7,7 +7,7 @@ using namespace std;
 bool avail_flag[4] = { false, };
 Channel channel[4];
 
-
+fdeep::model model = fdeep::load_model("model_50.json"); // load a model only once
 
 
 int main(int argc, char** argv) {
@@ -42,8 +42,8 @@ int main(int argc, char** argv) {
 void play_ai(const int in_ch, const int out_ch, const Player_type player_type) {
 
 	if (player_type == HEURISTIC || player_type == NN) {
-		const fdeep::model model = fdeep::load_model("model_50.json"); // load a model only once
-		MCTS* mcts = new MCTS((player_type == NN), &model);
+		
+		MCTS mcts((player_type == NN));
 		Status status = PLAYING;
 		while (status == PLAYING) {
 			int x1, y1, x2, y2;
@@ -51,7 +51,7 @@ void play_ai(const int in_ch, const int out_ch, const Player_type player_type) {
 			int new_x1, new_y1, new_x2, new_y2;
 
 			recv_input(x1, y1, x2, y2, start, in_ch);
-			status = mcts->one_turn(x1, y1, x2, y2, start, new_x1, new_y1, new_x2, new_y2);
+			status = mcts.one_turn(x1, y1, x2, y2, start, new_x1, new_y1, new_x2, new_y2);
 			send_output(new_x1, new_y1, new_x2, new_y2, false, out_ch);
 		}
 		switch (status) {

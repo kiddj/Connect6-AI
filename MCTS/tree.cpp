@@ -1,3 +1,6 @@
+#include "fdeep/fdeep.hpp"
+#include "fplus/fplus.hpp"
+
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
@@ -117,7 +120,7 @@ Status place_piece(Node& node, const Move& move, const bool use_NN, MCTS* mcts) 
 	if (use_NN) {
 		vector<float> flattened_block;
 		generate_block(&node, mcts, &flattened_block);
-		vector<float> policy_1d = policy_network(flattened_block, mcts->model, mcts->use_NN);
+		vector<float> policy_1d = policy_network(flattened_block, mcts->use_NN);
 		float value = value_network(flattened_block, &node, mcts->use_NN);
 
 		float(*policy_2d)[BOARD_WIDTH] = 

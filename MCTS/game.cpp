@@ -8,7 +8,7 @@
 #include <algorithm>
 using namespace std;
 
-MCTS::MCTS(const bool& _use_NN, const fdeep::model* _model) :
+MCTS::MCTS(const bool _use_NN) :
 	use_NN(_use_NN),
 	cur_node(NULL),
 	playing(NONE),
@@ -16,15 +16,18 @@ MCTS::MCTS(const bool& _use_NN, const fdeep::model* _model) :
 	turns(0),
 	black_log(TURN_HISTORY_NUM, NULL),
 	white_log(TURN_HISTORY_NUM, NULL){
-	model = _model;
 	cur_node = alloc_Node();
 	for (int i = 0; i < FIRST_NUM_TURN; i++) {
-		pair<Move, Node* > result = get_best_move_child(cur_node, PLAYTHROUGH_LIMIT, TIME_LIMIT_SEC);
-		set_new_root(result.second);
+		//pair<Move, Node* > result = get_best_move_child(cur_node, PLAYTHROUGH_LIMIT, TIME_LIMIT_SEC);
+		//set_new_root(result.second);
+
+		expand(cur_node, 0, true, this);
+		set_new_root(cur_node->children[0]);
+		
 	}
 }
 
-void MCTS::set_new_root(Node*& new_root) {
+void MCTS::set_new_root(Node* new_root) {
 	set_root_node(new_root);
 
 	if (cur_node->last_piece == BLACK) {
@@ -67,7 +70,6 @@ Status MCTS::one_turn(const int x1, const int y1,
 					break;
 				}
 			}
-			cout << "after len loop " << (next_node == NULL) << " " << turns << endl;
 			if (next_node == NULL) {
 				if (idx_to_expand == -1) {
 					cur_node->moves.resize(1);
@@ -76,7 +78,6 @@ Status MCTS::one_turn(const int x1, const int y1,
 				}
 				next_node = expand(cur_node, idx_to_expand, (opp_move_cnt == NUM_TURN - 1), this);
 			}
-			cout << "before set_new_root opp move " << turns << endl;
 			set_new_root(next_node);
 		}
 	}
@@ -114,27 +115,35 @@ pair<Move, Node* > MCTS::get_best_move_child(Node* cur_node, int num_playout, in
 	int playout = 0;
 	int mask = num_playout == -1 ? 0 : 1;
 	num_playout = num_playout == -1 ? 1 : num_playout;
+
+
 	for (; playout * mask < num_playout; playout++) {
 		
 		int end_time = (int)time(NULL);
 		if (end_time - begin_time >= seconds)
 			break;
-
+		
 		pair <pair <Node*, int>, int > select_result_pair = node_select(cur_node); // leaf: children not all visited OR terminal state
 		pair <Node*, int> leaf = select_result_pair.first;
-
+		
 		int cur_tree_height = select_result_pair.second;
 		total_tree_height += cur_tree_height;
 		max_tree_height = max_tree_height > cur_tree_height ?
 			max_tree_height : cur_tree_height;
-
+		
 		if (leaf.first->status == PLAYING) {
+		
 			Node* new_leaf = expand(leaf.first, leaf.second, true, this);
+		
 			update(new_leaf);
+		
 		}
 		else {
+		
 			update(leaf.first);
+		
 		}
+		
 		
 	}
 	cout << endl;
@@ -166,7 +175,9 @@ pair<Move, Node* > MCTS::get_best_move_child(Node* cur_node, int num_playout, in
 pair <pair <Node*, int>, int > node_select(Node* root) {
 	Node* cur_node = root;
 	int tree_height = 1;
+	
 	while (cur_node->status == PLAYING) {
+	
 		int best_next_node_idx = -2;
 		double best_score = -999.;
 		Node* best_next_node = NULL;
@@ -184,11 +195,13 @@ pair <pair <Node*, int>, int > node_select(Node* root) {
 			}
 		}
 		if (best_next_node == NULL) {
+			
 			return { { cur_node, best_next_node_idx}, tree_height };
 		}
 		cur_node = best_next_node;
 		tree_height++;
 	}
+	
 	return { { cur_node, -1 }, tree_height };
 }
 
@@ -240,7 +253,7 @@ inline double get_score(const Node* node, const float prior_prob, const int pare
 }
 
 vector<float> policy_network(vector<float> flattened_block, 
-		const fdeep::model* _model, const bool use_NN) {
+		const bool use_NN) {
 
 	if (use_NN == false) {
 		vector<float> policy_1d(BOARD_WIDTH * BOARD_WIDTH, 0.);
@@ -261,7 +274,7 @@ vector<float> policy_network(vector<float> flattened_block,
 	const auto shared = fdeep::shared_float_vec(fplus::make_shared_ref<fdeep::float_vec>(flattened_block));
     fdeep::tensor3 input = fdeep::tensor3(fdeep::shape_hwc(19, 19, 5), shared); // converted to tensor form
 
-	fdeep::tensor3s results = _model->predict({input});  // tensor3s(input) -> NN -> tensor3s(output)
+	fdeep::tensor3s results = model.predict({input});  // tensor3s(input) -> NN -> tensor3s(output)
     fdeep::tensor3 result = results[0];  // tensor3s -> tensor3
     vector<float> result_vec = *result.as_vector();  // tensor3 -> vector<float>
 
