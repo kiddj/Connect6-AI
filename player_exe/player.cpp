@@ -39,11 +39,68 @@ void put_stone() {
 
 	const bool use_NN = true;
 
+
+	/*FILE* fp = fopen("log_custom.txt", "a");
+	static const char* status_str[] = { "PLAYING", "BLACK_WON", "WHITE_WON", "DRAW" };
+	static const char piece_char[] = { '.', 'X', 'O', '?' };
+	cout << "    ";
+	for (int x = 0; x < BOARD_WIDTH; x++) {
+		cout << (x >= 10 ? x - 10 : x) << " ";
+		fprintf(fp, "%d ", (x >= 10 ? x - 10 : x));
+	}
+	cout << endl;
+	fprintf(fp, "\n");
+	for (int y = 0; y < BOARD_WIDTH; y++) {
+		cout << "  ";
+		fprintf(fp, "  ");
+		cout << (y >= 10 ? y - 10 : y) << " ";
+		fprintf(fp, "%d ", (y >= 10 ? y - 10 : y));
+		for (int x = 0; x < BOARD_WIDTH; x++) {
+			cout << piece_char[(int)(board[x][y])] << " ";
+			fprintf(fp, "%c ", piece_char[(int)(board[x][y])]);
+		}
+		cout << endl;
+		fprintf(fp, "\n");
+	}*/
+
 	MCTS* mcts = new MCTS(use_NN, board);
 
 	mcts->one_turn(new_x1, new_y1, new_x2, new_y2);
 
-	x[0] = new_x1, y[0] = new_y1, x[1] = new_x2, y[1] = new_y2;
+	/*static const char* piece_to_str[] = { "NONE", "BLACK", "WHITE" };
+	fprintf(fp, "%s %d: %s\n", piece_to_str[(int)(mcts->playing)], mcts->turns, (use_NN ? "using NN" : "heuristic"));
+	cout << "    ";
+	fprintf(fp, "    ");
+	for (int x = 0; x < BOARD_WIDTH; x++) {
+		cout << (x >= 10 ? x - 10 : x) << " ";
+		fprintf(fp, "%d ", (x >= 10 ? x - 10 : x));
+	}
+	cout << endl;
+	fprintf(fp, "\n");
+	for (int y = 0; y < BOARD_WIDTH; y++) {
+		cout << "  ";
+		fprintf(fp, "  ");
+		cout << (y >= 10 ? y - 10 : y) << " ";
+		fprintf(fp, "%d ", (y >= 10 ? y - 10 : y));
+		for (int x = 0; x < BOARD_WIDTH; x++) {
+			cout << piece_char[(int)(mcts->cur_node->board_state[x][y])] << " ";
+			fprintf(fp, "%c ", piece_char[(int)(mcts->cur_node->board_state[x][y])]);
+		}
+		cout << endl;
+		fprintf(fp, "\n");
+	}
+	cout << status_str[(int)(mcts->cur_node->status)] << endl;
+	fprintf(fp, "%s\n", status_str[(int)(mcts->cur_node->status)]);
+
+	fprintf(fp, "MOVES: (%d,%d) (%d,%d)\n", new_x1, new_y1, new_x2, new_y2);
+	fclose(fp);*/
+	
+	x[0] = new_y1;
+	y[0] = 18 - new_x1;
+	x[1] = new_y2;
+	y[1] = 18 - new_x2;
+
+	//x[0] = new_x1, y[0] = new_y1, x[1] = new_x2, y[1] = new_y2;
 }
 
 int main() {
