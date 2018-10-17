@@ -16,9 +16,7 @@ MCTS::MCTS(const bool& _use_NN, int board[BOARD_WIDTH][BOARD_WIDTH]) :
 	first(true),
 	turns(0){
 
-	log_str("enter MCTS::MCTS()");
 	cur_node = alloc_Node();
-	log_str("completed alloc_Node()");
 	Node& node = *cur_node;
 
 	node.parent = NULL;
@@ -44,7 +42,6 @@ MCTS::MCTS(const bool& _use_NN, int board[BOARD_WIDTH][BOARD_WIDTH]) :
 			}
 		}
 	}
-	log_str("copied board states");
 	Piece _last_piece = NONE;
 	if (black_cnt > white_cnt) {
 		_last_piece = BLACK;
@@ -58,9 +55,9 @@ MCTS::MCTS(const bool& _use_NN, int board[BOARD_WIDTH][BOARD_WIDTH]) :
 	node.num_pieces = black_cnt + white_cnt;
 
 	vector<float> flattened_block;
-	generate_block(&node, this, &flattened_block); log_str("generated block");
-	vector<float> policy_1d = policy_network(flattened_block, this->use_NN); log_str("inferenced policy");
-	float value = value_network(flattened_block, &node, this->use_NN); log_str("inferenced value");
+	generate_block(&node, this, &flattened_block);
+	vector<float> policy_1d = policy_network(flattened_block, this->use_NN);
+	float value = value_network(flattened_block, &node, this->use_NN); 
 
 	float(*policy_2d)[BOARD_WIDTH] = 
 		(float(*)[BOARD_WIDTH])policy_1d.data();
@@ -70,8 +67,6 @@ MCTS::MCTS(const bool& _use_NN, int board[BOARD_WIDTH][BOARD_WIDTH]) :
 		}
 	}
 	node.value = value;
-
-	log_str("copied policy & value");
 
 	node.moves.clear();
 	node.moves = get_legal_moves(node, use_NN);
@@ -87,7 +82,6 @@ MCTS::MCTS(const bool& _use_NN, int board[BOARD_WIDTH][BOARD_WIDTH]) :
 	node.visit_cnt = 0;
 
 	node.status = PLAYING;
-	log_str("completed MCTS::MCTS()");
 }
 
 void MCTS::set_new_root(Node*& new_root) {
@@ -121,8 +115,13 @@ Status MCTS::one_turn(int& new_x1, int& new_y1, int& new_x2, int& new_y2) {
 		x[i] = result.first.x;
 		y[i] = result.first.y;
 
+
+
+
+
 		cout << piece_to_str[(int)playing] << " " << (turns++) << ": " << (use_NN ? "using NN" : "heuristic") << endl;
 		display_board_status(*cur_node);
+
 
 		/* vector<float> flattened_block;
 		generate_block(cur_node, this, &flattened_block);
