@@ -16,7 +16,7 @@ using namespace std;
 #define PLAYTHROUGH_LIMIT -1
 #define TIME_LIMIT_SEC 2
 
-#define TURN_HISTORY_NUM 2
+#define TURN_HISTORY_NUM 1
 #define TOTAL_HISTORY_NUM (TURN_HISTORY_NUM * 2)
 #define CHANNEL_NUM (TOTAL_HISTORY_NUM + 1)
 

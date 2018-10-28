@@ -203,7 +203,7 @@ inline model read_model(std::istream& model_file_stream,
         json_data["architecture"]["config"]["name"]),
         internal::create_shape_hwcs_variable(json_data["input_shapes"]));
 
-    if (verify)
+    if (false)
     {
         if (!json_data["tests"].is_array())
         {
