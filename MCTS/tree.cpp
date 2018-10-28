@@ -590,74 +590,18 @@ void generate_block(Node* node, MCTS* mcts, vector<float> *flattened_block) {
 
 	// 0th channel
 	const float zeroth_channel_val = whose_turn == BLACK ? 1. : 0.;
-
 	for (int x = 0; x < BOARD_WIDTH; x++) {
 		for (int y = 0; y < BOARD_WIDTH; y++) {
 			internal_array[x][y][0] = zeroth_channel_val;
 		}
 	}
 
-	// 1st and 2nd channels
-	int num_black_filled = 0, num_white_filled = 0;
-	void* state_list[CHANNEL_NUM];
-	void **black_list = state_list + 1;
-	void **white_list = state_list + 1 + TURN_HISTORY_NUM;
-	
-	// go up the tree for TOTAL_HISTORY_NUM, including current leaf node.
-	Node* cur_node = node;
-	for (int hist = 0; 
-		hist < TOTAL_HISTORY_NUM && cur_node != NULL; 
-		hist++, cur_node = cur_node->parent) {
-
-		if (cur_node->last_piece == BLACK) {
-			black_list[TURN_HISTORY_NUM - (++num_black_filled)] = cur_node->black_state;
-		}
-		else {
-			white_list[TURN_HISTORY_NUM - (++num_white_filled)] = cur_node->white_state;
-		}
-	}
-
-	// now we are looking beyond the root node. refer the log member variables.
-	static const float empty_board[BOARD_WIDTH][BOARD_WIDTH] = { {0.} };
-
-	// black channel
-	const auto& black_log = mcts->black_log;
-
-	const int black_left = TURN_HISTORY_NUM - num_black_filled;
-	for (int hist = 0; hist < black_left; hist++) {
-		const Node* cur_past_node = black_log[hist];
-		const float (*cur_past_board)[BOARD_WIDTH];
-		if (cur_past_node == NULL) {
-			cur_past_board = empty_board;
-		}
-		else {
-			cur_past_board = cur_past_node->black_state;
-		}
-		black_list[TURN_HISTORY_NUM - (++num_black_filled)] = (void*)cur_past_board;
-	}
-
-	// white channel
-	const auto& white_log = mcts->white_log;
-
-	const int white_left = TURN_HISTORY_NUM - num_white_filled;
-	for (int hist = 0; hist < white_left; hist++) {
-		const Node* cur_past_node = white_log[hist];
-		const float (*cur_past_board)[BOARD_WIDTH];
-		if (cur_past_node == NULL) {
-			cur_past_board = empty_board;
-		}
-		else {
-			cur_past_board = cur_past_node->white_state;
-		}
-		white_list[TURN_HISTORY_NUM - (++num_white_filled)] = (void*)cur_past_board;
-	}
-
-	// actually filling in 4 board state channels
-	for (int channel = 1; channel < CHANNEL_NUM; channel++) {
-		const float(*cur_channel)[BOARD_WIDTH] = (float(*)[BOARD_WIDTH])state_list[channel];
-		for (int x = 0; x < BOARD_WIDTH; x++) {
-			for (int y = 0; y < BOARD_WIDTH; y++) {
-				internal_array[x][y][channel] = cur_channel[x][y];
+	// 1st channel, 2nd channel
+	for (int x = 0; x < BOARD_WIDTH; x++) {
+		for (int y = 0; y < BOARD_WIDTH; y++) {
+			for (int channel = 0; channel < TURN_HISTORY_NUM; channel++) {
+				internal_array[x][y][1 + channel] = node->black_state[x][y];
+				internal_array[x][y][1 + TURN_HISTORY_NUM + channel] = node->white_state[x][y];
 			}
 		}
 	}

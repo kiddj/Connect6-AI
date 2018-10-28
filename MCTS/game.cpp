@@ -272,7 +272,7 @@ vector<float> policy_network(vector<float> flattened_block,
 	}
 
 	const auto shared = fdeep::shared_float_vec(fplus::make_shared_ref<fdeep::float_vec>(flattened_block));
-    fdeep::tensor3 input = fdeep::tensor3(fdeep::shape_hwc(19, 19, 5), shared); // converted to tensor form
+    fdeep::tensor3 input = fdeep::tensor3(fdeep::shape_hwc(19, 19, 3), shared); // converted to tensor form
 
 	fdeep::tensor3s results = model.predict({input});  // tensor3s(input) -> NN -> tensor3s(output)
     fdeep::tensor3 result = results[0];  // tensor3s -> tensor3
