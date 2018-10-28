@@ -41,23 +41,6 @@ Node *alloc_Node() {
 }
 
 Node *copy_Node(const Node& original) {
-	/*Node* new_node = new Node;
-	Node& node = *new_node;
-
-	node.parent = NULL;
-	
-	node.num_child = original.num_child;
-	node.num_child_visited = 0;
-
-	for (int x = 0; x < BOARD_WIDTH; x++)
-		for (int y = 0; y < BOARD_WIDTH; y++)
-			node.board_state[x][y] = original.board_state[x][y];
-
-
-	last_piece
-	nth_turn
-board_state
-num_pieces*/
 	return new Node(original);
 }
 
@@ -121,7 +104,6 @@ Status place_piece(Node& node, const Move& move, const bool use_NN, MCTS* mcts) 
 		vector<float> flattened_block;
 		generate_block(&node, mcts, &flattened_block);
 		vector<float> policy_1d = policy_network(flattened_block, mcts->use_NN);
-
 		float(*policy_2d)[BOARD_WIDTH] = 
 			(float(*)[BOARD_WIDTH])policy_1d.data();
 		for (int x = 0; x < BOARD_WIDTH; x++) {
@@ -133,7 +115,6 @@ Status place_piece(Node& node, const Move& move, const bool use_NN, MCTS* mcts) 
 		vector<float> value_flattened_block;
 		generate_block_value(&node, mcts, &value_flattened_block);
 		float value = value_network(value_flattened_block, &node, mcts->use_NN);
-
 		node.value = value;
 	}
 	node.moves.clear();

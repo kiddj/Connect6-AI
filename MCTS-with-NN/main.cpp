@@ -7,7 +7,9 @@ using namespace std;
 bool avail_flag[4] = { false, };
 Channel channel[4];
 
-fdeep::model model = fdeep::load_model("model_50.json"); // load a model only once
+
+using namespace std::chrono;
+steady_clock::time_point start_time;
 
 
 int main(int argc, char** argv) {
@@ -17,8 +19,8 @@ int main(int argc, char** argv) {
 		cerr << "needs 2 arguement: black, white" << endl;
 	}
 	
-	black_ai = (Player_type)(argv[1][0] - '0');
-	white_ai = (Player_type)(argv[2][0] - '0');
+	black_ai = (Player_type)('1' - '0');
+	white_ai = (Player_type)('1' - '0');
 
 	thread black_player(play_ai, 0, 2, black_ai);
 	thread white_player(play_ai, 1, 3, white_ai);
@@ -51,6 +53,7 @@ void play_ai(const int in_ch, const int out_ch, const Player_type player_type) {
 			int new_x1, new_y1, new_x2, new_y2;
 
 			recv_input(x1, y1, x2, y2, start, in_ch);
+			start_time = steady_clock::now();
 			status = mcts.one_turn(x1, y1, x2, y2, start, new_x1, new_y1, new_x2, new_y2);
 			send_output(new_x1, new_y1, new_x2, new_y2, false, out_ch);
 		}

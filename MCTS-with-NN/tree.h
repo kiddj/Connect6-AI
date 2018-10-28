@@ -5,7 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <deque>
-
+#include <chrono>
 
 using namespace std;
 
@@ -30,6 +30,9 @@ typedef enum { HEURISTIC = 0, NN, PERSON } Player_type;
 
 
 extern fdeep::model model, value_model;
+
+using namespace std::chrono;
+extern steady_clock::time_point start_time;
 
 typedef struct Move {
 	int x, y;
@@ -89,6 +92,7 @@ public:
 	int turns;
 	deque<Node* > black_log, white_log;
 
+	MCTS(){}
 	MCTS(const bool use_NN);
 	void set_new_root(Node* new_root);
 	Status one_turn(const int x1, const int y1,
@@ -159,8 +163,6 @@ template <typename T>
 T pick_random(vector<T>& items); // pick single random element
 
 void initialize(void); // initialize few things e.g. seed for rand()
-
-pair<Move, Node* > get_best_move_child(Node* cur_node, int num_playout, int seconds);
 
 pair <pair <Node* , int> , int > node_select(Node* root); // starting from root, find terminal state, OR node with not all children visited
 // always choose child with largest score.

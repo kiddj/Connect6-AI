@@ -6,6 +6,7 @@
 #include <ctime>
 #include <cmath>
 #include <algorithm>
+#include <chrono>
 using namespace std;
 
 MCTS::MCTS(const bool _use_NN) :
@@ -18,9 +19,6 @@ MCTS::MCTS(const bool _use_NN) :
 	white_log(TURN_HISTORY_NUM, NULL){
 	cur_node = alloc_Node();
 	for (int i = 0; i < FIRST_NUM_TURN; i++) {
-		//pair<Move, Node* > result = get_best_move_child(cur_node, PLAYTHROUGH_LIMIT, TIME_LIMIT_SEC);
-		//set_new_root(result.second);
-
 		expand(cur_node, 0, true, this);
 		set_new_root(cur_node->children[0]);
 		
@@ -112,13 +110,20 @@ pair<Move, Node* > MCTS::get_best_move_child(Node* cur_node, int num_playout, in
 
 	int total_tree_height = 0;
 	int max_tree_height = -1;
-	int playout = 0;
+	int playout = 1;
 	int mask = num_playout == -1 ? 0 : 1;
 	num_playout = num_playout == -1 ? 1 : num_playout;
 
-
+	using namespace std::chrono;
+	steady_clock::time_point loop_start_time = steady_clock::now();
 	for (; playout * mask < num_playout; playout++) {
 		
+		steady_clock::time_point cur_time = steady_clock::now();
+		duration<double> time_span = duration_cast<duration<double>>(cur_time - start_time);
+		double spent_time = time_span.count();
+		if (spent_time > 3.8)
+			break;
+
 		int end_time = (int)time(NULL);
 		if (end_time - begin_time >= seconds)
 			break;
@@ -132,26 +137,24 @@ pair<Move, Node* > MCTS::get_best_move_child(Node* cur_node, int num_playout, in
 			max_tree_height : cur_tree_height;
 		
 		if (leaf.first->status == PLAYING) {
-		
 			Node* new_leaf = expand(leaf.first, leaf.second, true, this);
-		
 			update(new_leaf);
-		
 		}
 		else {
-		
 			update(leaf.first);
-		
 		}
-		
-		
 	}
+
+	steady_clock::time_point loop_end_time = steady_clock::now();
+	duration<double> time_span = duration_cast<duration<double>>(loop_end_time - loop_start_time);
+	double spent_time = time_span.count();
+
 	cout << endl;
 	cout << "average tree search depth: " << (double)total_tree_height / playout << endl;
 	cout << "playout #: " << playout << endl;
-	cout << "average time(ms): " << (double)1000 * seconds / playout << endl;
+	cout << "average time(ms): " << 1000 * spent_time / playout << endl;
 	cout << "max tree search depth: " << max_tree_height << endl;
-	double max_win_rate = -1.;
+	double max_win_rate = -2.;
 	int res = -1;
 	int len = cur_node->moves.size();
 	for (int i = 0; i < len; i++) {
@@ -159,15 +162,15 @@ pair<Move, Node* > MCTS::get_best_move_child(Node* cur_node, int num_playout, in
 			continue;
 
 		Node& cur_child = *(cur_node->children[i]);
-		//double win_rate = (double)cur_child.win_cnt / cur_child.visit_cnt;
-		double win_rate = cur_child.visit_cnt;
+		double win_rate = (double)cur_child.win_cnt / cur_child.visit_cnt;
+		// double win_rate = cur_child.visit_cnt;
 		if (max_win_rate < win_rate) {
 			res = i;
 			max_win_rate = win_rate;
 		}
 	}
 
-	if (res == -1)
+	if (res != -1)
 		cout << "win_rate: " << (int)((cur_node->children[res]->win_cnt / cur_node->children[res]->visit_cnt + 1) / 2 * 100) << "%" << endl;
 	return { cur_node->moves[res], cur_node->children[res] };
 }
@@ -222,6 +225,7 @@ void update(Node* leaf) {
 
 	Node* cur_node = leaf;
 	while (cur_node != NULL) {
+
 		cur_node->visit_cnt++;
 
 		if (about_to == cur_node->last_piece)
@@ -270,10 +274,9 @@ vector<float> policy_network(vector<float> flattened_block,
 
 		return policy_1d;
 	}
-
 	const auto shared = fdeep::shared_float_vec(fplus::make_shared_ref<fdeep::float_vec>(flattened_block));
     fdeep::tensor3 input = fdeep::tensor3(fdeep::shape_hwc(19, 19, 3), shared); // converted to tensor form
-
+static fdeep::model model = fdeep::load_model("resnet3.json"); // load a model only once
 	fdeep::tensor3s results = model.predict({input});  // tensor3s(input) -> NN -> tensor3s(output)
     fdeep::tensor3 result = results[0];  // tensor3s -> tensor3
     vector<float> result_vec = *result.as_vector();  // tensor3 -> vector<float>
@@ -291,11 +294,12 @@ float value_network(vector<float> flattened_block, void* node, const bool use_NN
 		return about_to_play_who == BLACK ? value : - value;
 	}
 
-
 	const auto shared = fdeep::shared_float_vec(fplus::make_shared_ref<fdeep::float_vec>(flattened_block));
     fdeep::tensor3 input = fdeep::tensor3(fdeep::shape_hwc(19, 19, 4), shared);
+    static fdeep::model value_model = fdeep::load_model("value.json"); // load value net only once
     
     fdeep::tensor3s results = value_model.predict({input});  // tensor3s(input) -> NN -> tensor3s(output)
+    
     fdeep::tensor3 result = results[0];  // tensor3s -> tensor3
     std::vector<float> result_vec = *result.as_vector();  // tensor3 -> vector<float>
 

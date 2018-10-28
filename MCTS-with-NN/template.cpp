@@ -168,6 +168,7 @@
 #include <stdio.h>
 #include <string>
 #include <ctime>
+#include <chrono>
 #include "tree.h"
 
 #define		BUF_SIZE	1024
@@ -184,9 +185,9 @@
 
 using namespace std;
 
-fdeep::model model = fdeep::load_model("model_50.json"); // load a model only once
-fdeep::model value_model = fdeep::load_model("value.json"); // load value net only once
-MCTS mcts(true);
+// fdeep::model model = fdeep::load_model("resnet3.json"); // load a model only once
+// fdeep::model value_model = fdeep::load_model("value.json"); // load value net only once
+MCTS mcts;
 
 int board[WIDTH][HEIGHT];
 int op_x[2];
@@ -194,6 +195,10 @@ int op_y[2];
 int x[2];
 int y[2];
 
+
+
+using namespace std::chrono;
+steady_clock::time_point start_time;
 
 void print_board() {
 
@@ -273,11 +278,20 @@ int main() {
 	Status status = PLAYING;
 	cout << "Initialization complete" << endl;
 
+	bool first = true;
 	while (true) {
 		listen(s, 5);
 		int cSize = sizeof(cliAddr);
 		SOCKET s2 = accept(s, reinterpret_cast<SOCKADDR *>(&cliAddr), &cSize);
 		//cout << "Connection established. New socket num is " << s2 << endl << endl;
+
+		start_time = steady_clock::now();
+
+		if (first) {
+			first = false;
+			MCTS _mcts(true);
+			mcts = _mcts;
+		}
 
 		int n;
 		n = recv(s2, buf, sizeof(buf), NULL);
@@ -295,7 +309,7 @@ int main() {
 		op_x[1] = (buf[365] - '0') * 10 + (buf[366] - '0');
 		op_y[1] = (buf[367] - '0') * 10 + (buf[368] - '0');
 
-		printf("\n\nOpposite: %d %d / %d %d", op_x[0], op_y[0], op_x[1], op_y[1]);
+		printf("\n\nOpposite: %d %d / %d %d\n", op_x[0], op_y[0], op_x[1], op_y[1]);
 
 		cout << "choosing position..(put_stone() will not be used)" << endl;
 		int x1 = op_x[0], y1 = op_y[0], x2 = op_x[1], y2 = op_y[1];
