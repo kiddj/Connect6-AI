@@ -18,7 +18,7 @@ def main():
     do_train = True
     do_augment = False
     do_load_model = init > 0
-    force_create_data = True
+    force_create_data = False
 
     os.makedirs(DATA_PATH, exist_ok=True)
     data_dir = os.path.join(DATA_PATH, 'alphago_data')
@@ -53,21 +53,23 @@ def main():
 
         dataset = (x, p, v)
 
-    model_name = 'complex_1'
+    model_name = 'resnet6'
 
     if do_load_model:
         m = load_model(os.path.join(MODEL_PATH, model_name, 'model.h5'))
         print('*** Successfully loaded model. ***')
     else:
-        m = model.build_complex()
-        # m = policy.build_policy()
+        # m = model.build_complex()
+        m = policy.build_policy_head()
+        # m = value.build_value()
 
     if do_train:
-        model.train_complex(m, dataset, model_name, init=init)
-        # policy.train_policy(m, dataset, model_name, init=init)
+        # model.train_complex(m, dataset, model_name, init=init)
+        policy.train_policy(m, dataset, model_name, init=init)
+        # value.train_value(m, dataset, model_name, init=init)
     else:
-        model.test_complex(model_name, dataset)
-        # policy.test_policy(model_name, dataset)
+        # model.test_complex(model_name, dataset)
+        policy.test_policy(model_name, dataset)
 
 
 if __name__ == '__main__':

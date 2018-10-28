@@ -59,7 +59,7 @@ def build_resnet(x):
 
     out = _conv_block(out)
 
-    for _ in range(10):
+    for _ in range(3):
         out = _res_block(out)
 
     out = Dropout(0.4)(out)

@@ -133,7 +133,7 @@ def read_game_alphago(game_path, filename, is_draw=False):
 
             turn += 1
 
-    win = -1 if is_black(turn) else 1
+    win = is_black(turn)
     win = 0 if is_draw else win
 
     return np.array(black_record), np.array(white_record), pos, win
@@ -192,7 +192,7 @@ def create_dataset_alphago(game_paths):
             for i in range(len(pos)):
                 block = []
                 b_turn = is_black(i + 1) > 0
-                win_turn = is_black(i)
+                win_turn = is_black(i + 1)
 
                 block.append(np.ones((1,) + board_shape[:2]) if b_turn else np.zeros((1,) + board_shape[:2]))
                 block.append(copy.deepcopy(black[b: b + num_prev_board]))
@@ -207,11 +207,12 @@ def create_dataset_alphago(game_paths):
 
                 x.append(np.concatenate(block).transpose(1, 2, 0))
                 p.append(np.array(label))
-                if i == 0:
-                    v.append(0)
-                else:
-                    p_win = win_turn * win
-                    v.append(p_win * (0.99 ** (len(pos) - i - 1)))
+                # if i == 0:
+                #     v.append(0)
+                # else:
+                p_win = win_turn * win
+                # v.append(p_win)
+                v.append(p_win * (0.995 ** (len(pos) - i - 1)))
 
     return np.array(x), np.array(p), np.array(v)
 
@@ -311,11 +312,12 @@ def draw_board(ax, board, color):
 def show_board_rate(model, x_data, y_data, fig=None, axes=None, block=False, save_path=None):
 
     idx = np.random.randint(x_data.shape[0])
-    x_data = x_data[idx].reshape(-1, *block_shape)
+    x_data = x_data[idx].reshape(-1, *value_block_shape)
     y_data = y_data[idx]
     y_pred = model.predict(x_data) if model is not None else np.random.uniform(-1, 1)
 
     b_turn = np.all(x_data[..., 0] == 1)
+    b_win = 1 if b_turn else -1
 
     if fig is None or axes is None:
         fig, axes = plt.subplots(figsize=(5, 5))
@@ -330,7 +332,7 @@ def show_board_rate(model, x_data, y_data, fig=None, axes=None, block=False, sav
     axes.set_axis_off()
     axes.set_xlim(-1, 19)
     axes.set_ylim(-1, 19)
-    axes.set_title('Current: {} & Win: {}\nWin Rate Pred.: {}'.format('Black' if b_turn else 'White', 'Black' if y_data > 0 else 'White', y_pred[0]))
+    axes.set_title('Current: {} & Win: {}\nWin Rate Pred.: {}'.format('Black' if b_turn else 'White', 'Black' if y_data * b_win > 0 else 'White', y_pred[0]))
 
     cur_black = x_data[..., num_prev_board]
     cur_white = x_data[..., 2 * num_prev_board]
@@ -426,16 +428,17 @@ def show_board_all(policy, value, x_data, p_data, v_data, fig=None, axes=None, b
     p_data = p_data[idx].reshape(-1, *board_shape)
     p_pred = policy.predict(x_data) if policy is not None else np.random.uniform(0, 1, board_shape)
     v_data = v_data[idx].reshape(-1, 1)
-    v_pred = value.predict(x_data) if value is not None else np.random.uniform(-1, 1)
+    v_pred = value.predict(x_data) if value is not None else np.array(np.random.uniform(-1, 1)).reshape((1, 1))
 
     b_turn = np.all(x_data[..., 0] == 1)
+    b_win = 1 if b_turn else -1
 
     if fig is None or axes is None:
         fig, axes = plt.subplots(ncols=3, figsize=(12, 5))
     fig.patch.set_facecolor((1, 1, 0.8))
 
     titles = ['<Current>\n{} turn'.format('BLACK' if b_turn else 'WHITE'),
-              '<Expectation>\n{} won the game...'.format('BLACK' if v_data[0, 0] > 0 else 'WHITE'),
+              '<Expectation>\n{} won the game...'.format('BLACK' if v_data[0, 0] * b_win > 0 else 'WHITE'),
               '<Prediction>\n(Green is to win, Red otherwise)\nWin rate: {:.8f}'.format(v_pred[0, 0])]
 
     for i, (ax, title) in enumerate(zip(axes, titles)):
@@ -586,18 +589,18 @@ def main():
 
     print(x.shape, p.shape, v.shape)
 
-    for i in range(3):
+    for i in range(10):
         print('******')
-        for j in range(5):
+        for j in range(2 * num_prev_board + 1):
             print_board(x[i, ..., j])
         # print_board(x[i, ..., 0])
         # print_board(x[i, ..., 2])
         # print_board(x[i, ..., 4])
-        # print_board(p[i])
+        print_board(p[i])
         print(v[i])
         print()
 
-    for i in range(4):
+    for i in range(30, 35):
         show_board_all(None, None, x[i:i + 1], p[i:i + 1], v[i:i + 1], block=True)
 
     exit()

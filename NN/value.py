@@ -14,13 +14,41 @@ import model
 import utils
 
 
+def build_value():
+    channels = [16, 32, 64, 64]
+    kern = (3, 3)
+
+    x = Input(shape=value_block_shape)
+    out = x
+
+    for channel in channels:
+        out = Conv2D(channel, kern, strides=(2, 2), padding='same')(out)
+        out = Conv2D(channel, kern, padding='same')(out)
+        out = BatchNormalization()(out)
+        out = LeakyReLU()(out)
+
+    # out = Dropout(0.3)(out)
+    out = Flatten()(out)
+    out = Dense(256)(out)
+    out = LeakyReLU()(out)
+    out = Dense(1, activation='tanh')(out)
+
+    # out = Conv2D(1, kern, padding='same', activation='softmax')(out)
+    # out = Reshape((361,))(out)
+
+    model = Model(x, out, name='value')
+    # model.summary()
+
+    return model
+
+
 def build_value_head(outer_tensor=None):
 
     channel = 1
     kern = (1, 1)
 
     if outer_tensor is None:
-        x = Input(shape=block_shape)
+        x = Input(shape=value_block_shape)
         out = model.build_resnet(x)
     else:
         x, out = outer_tensor
@@ -29,7 +57,7 @@ def build_value_head(outer_tensor=None):
     out = BatchNormalization()(out)
     out = LeakyReLU()(out)
 
-    out = Dropout(0.4)(out)
+    out = Dropout(0.3)(out)
 
     out = Flatten()(out)
     out = Dense(256)(out)
@@ -47,7 +75,8 @@ def train_value(value, dataset, model_name, init=0):
 
     assert isinstance(value, Model)
 
-    x, _, y = dataset
+    x, k, y = dataset
+    x = np.concatenate([x, k.reshape(-1, 19, 19, 1)], axis=-1)
     p = np.random.permutation(len(x))
     x = x[p]
     y = y[p]
@@ -73,6 +102,7 @@ def train_value(value, dataset, model_name, init=0):
     callback_list = [
         ModelCheckpoint(os.path.join(model_dir, 'model.h5'), period=5),
         TensorBoard(log_dir=log_dir, batch_size=batch_size, histogram_freq=5),
+        LambdaCallback(on_epoch_end=lambda epoch, logs: model.save_model(value, model_dir, epoch)),
         LambdaCallback(on_epoch_end=lambda epoch, logs: utils.show_board_rate(value, x_test, y_test, fig, axes)),
     ]
 

@@ -62,6 +62,7 @@ def build_policy_head(outer_tensor=None):
     out = BatchNormalization()(out)
     out = LeakyReLU()(out)
 
+    out = Dropout(0.3)(out)
     out = Flatten()(out)
     out = Dense(361, activation='softmax')(out)
 

@@ -6,11 +6,13 @@ import os
 ROOT_PATH = os.getcwd()
 GAME_PATH = os.path.join(ROOT_PATH, 'games')
 GAME_PATHS = [
-    os.path.join(ROOT_PATH, 'mcts'),
-    os.path.join(ROOT_PATH, 'threats')
+    # os.path.join(ROOT_PATH, 'mcts'),
+    # os.path.join(ROOT_PATH, 'threats')
+    os.path.join(GAME_PATH, 'data_10000'),
+    os.path.join(GAME_PATH, 'data_1997'),
 ]
 DRAW_GAME_PATHS = [
-    os.path.join(ROOT_PATH, 'draw')
+    # os.path.join(ROOT_PATH, 'draw')
 ]
 MODEL_PATH = os.path.join(ROOT_PATH, 'models')
 DATA_PATH = os.path.join(ROOT_PATH, 'data')
@@ -22,6 +24,7 @@ os.makedirs(MODEL_PATH, exist_ok=True)
 num_prev_board = 1
 board_shape = (19, 19, 1)
 block_shape = (19, 19, 2 * num_prev_board + 1)
+value_block_shape = (19, 19, 2 * num_prev_board + 2)
 
 learning_rate = 1e-4
 batch_size = 256
