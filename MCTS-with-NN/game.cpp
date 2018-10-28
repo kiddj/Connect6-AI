@@ -172,6 +172,12 @@ pair<Move, Node* > MCTS::get_best_move_child(Node* cur_node, int num_playout, in
 
 	if (res != -1)
 		cout << "win_rate: " << (int)((cur_node->children[res]->win_cnt / cur_node->children[res]->visit_cnt + 1) / 2 * 100) << "%" << endl;
+	else {
+		res = 0;
+		if (cur_node->children[res] == NULL) {
+			expand(cur_node, res, true, this);
+		}
+	}
 	return { cur_node->moves[res], cur_node->children[res] };
 }
 
@@ -276,7 +282,7 @@ vector<float> policy_network(vector<float> flattened_block,
 	}
 	const auto shared = fdeep::shared_float_vec(fplus::make_shared_ref<fdeep::float_vec>(flattened_block));
     fdeep::tensor3 input = fdeep::tensor3(fdeep::shape_hwc(19, 19, 3), shared); // converted to tensor form
-static fdeep::model model = fdeep::load_model("resnet3.json"); // load a model only once
+	static fdeep::model model = fdeep::load_model("resnet3.json"); // load a model only once
 	fdeep::tensor3s results = model.predict({input});  // tensor3s(input) -> NN -> tensor3s(output)
     fdeep::tensor3 result = results[0];  // tensor3s -> tensor3
     vector<float> result_vec = *result.as_vector();  // tensor3 -> vector<float>

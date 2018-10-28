@@ -173,7 +173,7 @@
 
 #define		BUF_SIZE	1024
 #define		IPAddress	"127.0.0.1"
-#define		PORT		8053	//white:8052, black:8053
+#define		PORT		8052	//white:8052, black:8053
 #define		WIDTH		19
 #define		HEIGHT		19
 #define		CNT			2
