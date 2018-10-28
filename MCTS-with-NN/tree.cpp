@@ -121,7 +121,6 @@ Status place_piece(Node& node, const Move& move, const bool use_NN, MCTS* mcts) 
 		vector<float> flattened_block;
 		generate_block(&node, mcts, &flattened_block);
 		vector<float> policy_1d = policy_network(flattened_block, mcts->use_NN);
-		float value = value_network(flattened_block, &node, mcts->use_NN);
 
 		float(*policy_2d)[BOARD_WIDTH] = 
 			(float(*)[BOARD_WIDTH])policy_1d.data();
@@ -130,6 +129,11 @@ Status place_piece(Node& node, const Move& move, const bool use_NN, MCTS* mcts) 
 				node.policy[x][y] = policy_2d[x][y];
 			}
 		}
+
+		vector<float> value_flattened_block;
+		generate_block_value(&node, mcts, &value_flattened_block);
+		float value = value_network(value_flattened_block, &node, mcts->use_NN);
+
 		node.value = value;
 	}
 	node.moves.clear();
@@ -603,6 +607,36 @@ void generate_block(Node* node, MCTS* mcts, vector<float> *flattened_block) {
 				internal_array[x][y][1 + channel] = node->black_state[x][y];
 				internal_array[x][y][1 + TURN_HISTORY_NUM + channel] = node->white_state[x][y];
 			}
+		}
+	}
+}
+
+void generate_block_value(Node* node, MCTS* mcts, vector<float> *value_flattened_block) {
+	Piece whose_turn = about_to_play(node);
+
+	float (*policy_array)[BOARD_WIDTH] = node->policy;
+
+	value_flattened_block->resize(BOARD_WIDTH * BOARD_WIDTH * (CHANNEL_NUM + 1));
+	float (*value_internal_array)[BOARD_WIDTH][CHANNEL_NUM + 1] = 
+		(float(*)[BOARD_WIDTH][CHANNEL_NUM + 1])(value_flattened_block->data());
+
+
+	// 0th channel
+	const float zeroth_channel_val = whose_turn == BLACK ? 1. : 0.;
+	for (int x = 0; x < BOARD_WIDTH; x++) {
+		for (int y = 0; y < BOARD_WIDTH; y++) {
+			value_internal_array[x][y][0] = zeroth_channel_val;
+		}
+	}
+
+	// 1st channel, 2nd channel
+	for (int x = 0; x < BOARD_WIDTH; x++) {
+		for (int y = 0; y < BOARD_WIDTH; y++) {
+			for (int channel = 0; channel < TURN_HISTORY_NUM; channel++) {
+				value_internal_array[x][y][1 + channel] = node->black_state[x][y];
+				value_internal_array[x][y][1 + TURN_HISTORY_NUM + channel] = node->white_state[x][y];
+			}
+			value_internal_array[x][y][1 + 2 * TURN_HISTORY_NUM] = policy_array[x][y];
 		}
 	}
 }

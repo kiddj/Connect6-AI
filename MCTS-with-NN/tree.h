@@ -29,7 +29,7 @@ typedef enum { PLAYING = 0, BLACK_WON, WHITE_WON, DRAW } Status;
 typedef enum { HEURISTIC = 0, NN, PERSON } Player_type;
 
 
-extern fdeep::model model;
+extern fdeep::model model, value_model;
 
 typedef struct Move {
 	int x, y;
@@ -185,6 +185,7 @@ inline double get_score(const Node* node, const float prior_prob, const int pare
 
 void generate_block(Node* node, MCTS* mcts, vector<float>* flattened_block);
 // generated 1d-flattened vector representation of a 19x19x5 3d block
+void generate_block_value(Node* node, MCTS* mcts, vector<float> *value_flattened_block);
 
 vector<float> policy_network(vector<float> flattened_block, const bool use_NN); // using policy NN, record node.policy matrix
 // in terms of player who is ABOUT to play

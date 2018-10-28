@@ -172,7 +172,7 @@
 
 #define		BUF_SIZE	1024
 #define		IPAddress	"127.0.0.1"
-#define		PORT		8052	//white:8052, black:8053
+#define		PORT		8053	//white:8052, black:8053
 #define		WIDTH		19
 #define		HEIGHT		19
 #define		CNT			2
@@ -185,6 +185,7 @@
 using namespace std;
 
 fdeep::model model = fdeep::load_model("model_50.json"); // load a model only once
+fdeep::model value_model = fdeep::load_model("value.json"); // load value net only once
 MCTS mcts(true);
 
 int board[WIDTH][HEIGHT];

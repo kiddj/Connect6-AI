@@ -291,11 +291,23 @@ float value_network(vector<float> flattened_block, void* node, const bool use_NN
 		return about_to_play_who == BLACK ? value : - value;
 	}
 
-	const pair<float, int> result_pair = random_play(*(Node*)node, false);
-	const float value = result_pair.first;
 
-	Piece about_to_play_who = about_to_play((Node*)node);
+	const auto shared = fdeep::shared_float_vec(fplus::make_shared_ref<fdeep::float_vec>(flattened_block));
+    fdeep::tensor3 input = fdeep::tensor3(fdeep::shape_hwc(19, 19, 4), shared);
+    
+    fdeep::tensor3s results = value_model.predict({input});  // tensor3s(input) -> NN -> tensor3s(output)
+    fdeep::tensor3 result = results[0];  // tensor3s -> tensor3
+    std::vector<float> result_vec = *result.as_vector();  // tensor3 -> vector<float>
 
-	return about_to_play_who == BLACK ? value : - value;
+    return result_vec[0];
+
+
+
+	// const pair<float, int> result_pair = random_play(*(Node*)node, false);
+	// const float value = result_pair.first;
+
+	// Piece about_to_play_who = about_to_play((Node*)node);
+
+	// return about_to_play_who == BLACK ? value : - value;
 }
 	
