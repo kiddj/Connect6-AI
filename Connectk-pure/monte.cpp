@@ -4,7 +4,7 @@
 #include "mcts.h"
 #include "shared.h"
 
-#define CANDIDATES 10
+#define CANDIDATES 8
 #define MONTE_ITERS 600
 
 using namespace std;
